@@ -13,9 +13,10 @@ export async function initializeFirestore() {
 
         // 1. Add Supermarkets
         console.log('Adding supermarkets...');
-        const supermarketsRef = collection(db, 'supermarkets');
         for (const supermarket of SUPERMARKETS) {
-            await addDoc(supermarketsRef, {
+            // Use setDoc with custom ID to prevent duplicates
+            const supermarketRef = doc(db, 'supermarkets', supermarket.id);
+            await setDoc(supermarketRef, {
                 ...supermarket,
                 createdAt: new Date(),
                 updatedAt: new Date()
