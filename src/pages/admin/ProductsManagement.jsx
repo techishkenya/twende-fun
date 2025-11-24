@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp } from 'lucide-react';
-import { CATEGORIES, SUPERMARKETS } from '../../lib/types';
+import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package } from 'lucide-react';
+import { CATEGORIES as DEFAULT_CATEGORIES, SUPERMARKETS } from '../../lib/types';
 import { getCheapestPrice, getSupermarketColor } from '../../hooks/useFirestore';
 
 export default function ProductsManagement() {
     const [products, setProducts] = useState([]);
     const [prices, setPrices] = useState({});
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState(null);
     const [editingProduct, setEditingProduct] = useState(null);
     const [editingPrices, setEditingPrices] = useState({});
+    const [showAddCategory, setShowAddCategory] = useState(false);
+    const [showAddProduct, setShowAddProduct] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -19,6 +23,25 @@ export default function ProductsManagement() {
 
     const fetchData = async () => {
         try {
+            // Fetch categories
+            const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+            if (categoriesSnapshot.empty) {
+                // Initialize with default categories
+                const defaultCats = DEFAULT_CATEGORIES.map(cat => ({ name: cat, productCount: 0 }));
+                setCategories(defaultCats);
+
+                // Save to Firestore
+                for (const cat of defaultCats) {
+                    await addDoc(collection(db, 'categories'), cat);
+                }
+            } else {
+                const catsList = categoriesSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setCategories(catsList);
+            }
+
             // Fetch products
             const productsSnapshot = await getDocs(collection(db, 'products'));
             const productsList = productsSnapshot.docs.map(doc => ({
@@ -42,12 +65,91 @@ export default function ProductsManagement() {
         }
     };
 
-    const filteredProducts = products.filter(product =>
-        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const getCategoryProductCount = (categoryName) => {
+        return products.filter(p => p.category === categoryName).length;
+    };
 
-    const handleDelete = async (productId) => {
+    const filteredProducts = selectedCategory
+        ? products.filter(product =>
+            product.category === selectedCategory &&
+            (product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.category?.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+        : [];
+
+    const handleAddCategory = async (categoryName) => {
+        try {
+            const docRef = await addDoc(collection(db, 'categories'), {
+                name: categoryName,
+                productCount: 0,
+                createdAt: new Date()
+            });
+            setCategories([...categories, { id: docRef.id, name: categoryName, productCount: 0 }]);
+            setShowAddCategory(false);
+        } catch (error) {
+            console.error('Error adding category:', error);
+            alert('Failed to add category');
+        }
+    };
+
+    const handleDeleteCategory = async (categoryId, categoryName) => {
+        const productsInCategory = products.filter(p => p.category === categoryName);
+        if (productsInCategory.length > 0) {
+            alert(`Cannot delete category with ${productsInCategory.length} products. Please delete or move the products first.`);
+            return;
+        }
+
+        if (confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
+            try {
+                await deleteDoc(doc(db, 'categories', categoryId));
+                setCategories(categories.filter(c => c.id !== categoryId));
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                alert('Failed to delete category');
+            }
+        }
+    };
+
+    const handleAddProduct = async (productData) => {
+        try {
+            // Generate product ID
+            const productId = `${productData.category.toLowerCase().substring(0, 2)}-${Date.now()}`;
+
+            // Add product
+            await setDoc(doc(db, 'products', productId), {
+                ...productData,
+                active: true,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+
+            // Initialize prices for all supermarkets
+            const initialPrices = {};
+            SUPERMARKETS.forEach(supermarket => {
+                initialPrices[supermarket.id] = {
+                    price: 0,
+                    location: '',
+                    updatedAt: new Date()
+                };
+            });
+
+            await setDoc(doc(db, 'prices', productId), {
+                productId,
+                prices: initialPrices,
+                lastUpdated: new Date(),
+                verified: true
+            });
+
+            setProducts([...products, { id: productId, ...productData }]);
+            setPrices({ ...prices, [productId]: initialPrices });
+            setShowAddProduct(false);
+        } catch (error) {
+            console.error('Error adding product:', error);
+            alert('Failed to add product');
+        }
+    };
+
+    const handleDeleteProduct = async (productId) => {
         if (confirm('Are you sure you want to delete this product and all its prices?')) {
             try {
                 await deleteDoc(doc(db, 'products', productId));
@@ -99,14 +201,104 @@ export default function ProductsManagement() {
         );
     }
 
+    // Category Grid View
+    if (!selectedCategory) {
+        return (
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">Products & Pricing Management</h1>
+                        <p className="text-gray-600 mt-1">Select a category to manage products</p>
+                    </div>
+                    <button
+                        onClick={() => setShowAddCategory(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
+                    >
+                        <Plus className="h-5 w-5" />
+                        Add Category
+                    </button>
+                </div>
+
+                {/* Categories Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {categories.map((category) => {
+                        const productCount = getCategoryProductCount(category.name);
+
+                        return (
+                            <div
+                                key={category.id || category.name}
+                                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group"
+                                onClick={() => setSelectedCategory(category.name)}
+                            >
+                                <div className="p-6">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                                                <Grid3x3 className="h-6 w-6 text-primary-600" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
+                                                    {category.name}
+                                                </h3>
+                                                <p className="text-sm text-gray-500">
+                                                    {productCount} {productCount === 1 ? 'product' : 'products'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {category.id && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteCategory(category.id, category.name);
+                                                }}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Add Category Modal */}
+                {showAddCategory && (
+                    <AddCategoryModal
+                        onClose={() => setShowAddCategory(false)}
+                        onSave={handleAddCategory}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Products List View (when category is selected)
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Products & Pricing Management</h1>
-                    <p className="text-gray-600 mt-1">{products.length} total products</p>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setSelectedCategory(null)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="h-6 w-6 text-gray-600" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">{selectedCategory}</h1>
+                        <p className="text-gray-600 mt-1">{filteredProducts.length} products</p>
+                    </div>
                 </div>
+                <button
+                    onClick={() => setShowAddProduct(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
+                >
+                    <Plus className="h-5 w-5" />
+                    Add Product
+                </button>
             </div>
 
             {/* Search */}
@@ -162,7 +354,7 @@ export default function ProductsManagement() {
                                             <Edit2 className="h-4 w-4" />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(product.id)}
+                                            onClick={() => handleDeleteProduct(product.id)}
                                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -281,27 +473,172 @@ export default function ProductsManagement() {
                         </div>
                     );
                 })}
+
+                {filteredProducts.length === 0 && (
+                    <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
+                        <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-500">No products in this category yet</p>
+                        <button
+                            onClick={() => setShowAddProduct(true)}
+                            className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                            Add your first product
+                        </button>
+                    </div>
+                )}
             </div>
 
-            {filteredProducts.length === 0 && (
-                <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
-                    <p className="text-gray-500">No products found</p>
-                </div>
-            )}
-
-            {/* Edit Product Modal */}
+            {/* Modals */}
             {editingProduct && (
                 <EditProductModal
                     product={editingProduct}
+                    categories={categories.map(c => c.name)}
                     onClose={() => setEditingProduct(null)}
                     onSave={handleUpdateProduct}
+                />
+            )}
+
+            {showAddProduct && (
+                <AddProductModal
+                    category={selectedCategory}
+                    onClose={() => setShowAddProduct(false)}
+                    onSave={handleAddProduct}
                 />
             )}
         </div>
     );
 }
 
-function EditProductModal({ product, onClose, onSave }) {
+// Add Category Modal
+function AddCategoryModal({ onClose, onSave }) {
+    const [categoryName, setCategoryName] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(categoryName);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-900">Add New Category</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                        <X className="h-5 w-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6">
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+                        <input
+                            type="text"
+                            value={categoryName}
+                            onChange={(e) => setCategoryName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                            placeholder="e.g., Frozen Foods"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                        >
+                            Add Category
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// Add Product Modal
+function AddProductModal({ category, onClose, onSave }) {
+    const [formData, setFormData] = useState({
+        name: '',
+        category: category,
+        image: ''
+    });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(formData);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-900">Add Product to {category}</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+                        <X className="h-5 w-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                        <input
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                            placeholder="e.g., Brookside Milk 500ml"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                        <input
+                            type="url"
+                            value={formData.image}
+                            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                            placeholder="https://example.com/image.jpg"
+                        />
+                        {formData.image && (
+                            <img
+                                src={formData.image}
+                                alt="Preview"
+                                className="mt-2 h-20 w-20 object-contain rounded-lg border border-gray-200"
+                            />
+                        )}
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                        >
+                            Add Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// Edit Product Modal
+function EditProductModal({ product, categories, onClose, onSave }) {
     const [formData, setFormData] = useState({
         name: product.name || '',
         category: product.category || '',
@@ -344,7 +681,7 @@ function EditProductModal({ product, onClose, onSave }) {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                             required
                         >
-                            {CATEGORIES.map((cat) => (
+                            {categories.map((cat) => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </select>
