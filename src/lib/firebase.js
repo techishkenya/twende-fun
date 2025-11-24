@@ -3,35 +3,23 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// TODO: Replace with your actual Firebase configuration
+// Real Firebase configuration
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBeSXNKMi6xW28laTMcWiBbPD1o_izadd4",
+    authDomain: "twende-a3958.firebaseapp.com",
+    projectId: "twende-a3958",
+    storageBucket: "twende-a3958.firebasestorage.app",
+    messagingSenderId: "461119739054",
+    appId: "1:461119739054:web:65b3c057a9c6af8e1f493f",
+    measurementId: "G-R1SSDVF9KR"
 };
 
-let app;
-let auth;
-let db;
-let storage;
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
-// Check if config is still using placeholders
-const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+// Initialize Firebase services
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
-if (isConfigured) {
-    try {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        storage = getStorage(app);
-    } catch (error) {
-        console.error("Firebase initialization error:", error);
-    }
-} else {
-    console.warn("Firebase not configured. Using mock mode.");
-}
-
-export { auth, db, storage };
+export default app;

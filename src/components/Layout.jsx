@@ -14,11 +14,25 @@ export default function Layout() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            <main className="max-w-md mx-auto min-h-screen bg-white shadow-xl overflow-hidden">
-                <Outlet />
+            <main className="max-w-md mx-auto min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
+                <div className="flex-1">
+                    <Outlet />
+                </div>
+
+                {/* Footer Links */}
+                <div className="py-8 text-center text-gray-400 text-xs bg-gray-50 border-t border-gray-100">
+                    <p>&copy; 2024 Twende. All rights reserved.</p>
+                    <div className="mt-2 space-x-3">
+                        <Link to="/help" className="hover:text-gray-600 transition-colors">Privacy</Link>
+                        <span>•</span>
+                        <Link to="/help" className="hover:text-gray-600 transition-colors">Terms</Link>
+                        <span>•</span>
+                        <Link to="/admin/login" className="hover:text-primary-600 transition-colors font-medium">Admin</Link>
+                    </div>
+                </div>
             </main>
 
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe">
+            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50">
                 <div className="max-w-md mx-auto flex justify-around items-center h-16 px-2">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path;
@@ -31,7 +45,7 @@ export default function Layout() {
                                     to={item.path}
                                     className="flex flex-col items-center justify-center -mt-8"
                                 >
-                                    <div className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white p-4 rounded-full shadow-lg hover:from-primary-700 hover:to-secondary-700 transition-all">
+                                    <div className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white p-4 rounded-full shadow-lg hover:from-primary-700 hover:to-secondary-700 transition-all active:scale-95">
                                         <Icon className="h-6 w-6" />
                                     </div>
                                     <span className="text-xs font-medium text-gray-600 mt-1">{item.label}</span>
@@ -44,7 +58,7 @@ export default function Layout() {
                                 key={item.path}
                                 to={item.path}
                                 className={clsx(
-                                    "flex flex-col items-center justify-center w-16 py-1 transition-colors",
+                                    "flex flex-col items-center justify-center w-16 py-1 transition-colors active:scale-95",
                                     isActive ? "text-primary-600" : "text-gray-400 hover:text-gray-600"
                                 )}
                             >

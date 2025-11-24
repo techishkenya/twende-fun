@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -13,6 +13,13 @@ import Submissions from './pages/Submissions';
 import Achievements from './pages/Achievements';
 import HelpSupport from './pages/HelpSupport';
 import SupermarketTrending from './pages/SupermarketTrending';
+import InitializeDatabase from './pages/InitializeDatabase';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminLayout from './components/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ProductsManagement from './pages/admin/ProductsManagement';
+import { PricesManagement, SupermarketsManagement, SubmissionsManagement, UsersManagement } from './pages/admin/AdminPlaceholders';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
@@ -34,6 +41,24 @@ function App() {
             <Route path="/help" element={<HelpSupport />} />
           </Route>
           <Route path="/login" element={<Login />} />
+
+          {/* Admin Routes */}
+          <Route path="/init-db" element={<InitializeDatabase />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          <Route path="/admin" element={
+            <PrivateRoute>
+              <AdminLayout />
+            </PrivateRoute>
+          }>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="products" element={<ProductsManagement />} />
+            <Route path="prices" element={<PricesManagement />} />
+            <Route path="supermarkets" element={<SupermarketsManagement />} />
+            <Route path="submissions" element={<SubmissionsManagement />} />
+            <Route path="users" element={<UsersManagement />} />
+          </Route>
         </Routes>
       </Router>
     </AuthProvider>

@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Search, ScanLine, Bell, TrendingUp, ShoppingBag } from 'lucide-react';
+import { useSupermarkets } from '../hooks/useFirestore';
 import SearchBar from '../components/SearchBar';
 import CategoryGrid from '../components/CategoryGrid';
 import SupermarketCard from '../components/SupermarketCard';
-import { SUPERMARKETS } from '../lib/types';
 
 export default function Home() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const { supermarkets, loading: supermarketsLoading } = useSupermarkets();
     return (
         <div className="pb-8">
             {/* Header */}
@@ -45,9 +49,15 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-3">
-                        {SUPERMARKETS.map((supermarket) => (
-                            <SupermarketCard key={supermarket.id} supermarket={supermarket} />
-                        ))}
+                        {supermarketsLoading ? (
+                            <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                            </div>
+                        ) : (
+                            supermarkets.map((supermarket) => (
+                                <SupermarketCard key={supermarket.id} supermarket={supermarket} />
+                            ))
+                        )}
                     </div>
                 </section>
 
