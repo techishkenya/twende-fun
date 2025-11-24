@@ -20,7 +20,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
 import PricesManagement from './pages/admin/PricesManagement';
 import SupermarketsManagement from './pages/admin/SupermarketsManagement';
-import { SubmissionsManagement, UsersManagement } from './pages/admin/AdminPlaceholders';
+import SubmissionsManagement from './pages/admin/SubmissionsManagement';
+import UsersManagement from './pages/admin/UsersManagement';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
