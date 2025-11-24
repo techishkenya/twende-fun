@@ -58,12 +58,53 @@ export default function TrendingManagement() {
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const trendingCount = products.filter(p => p.isTrending).length;
+    const totalViews = products.reduce((sum, p) => sum + (p.viewCount || 0), 0);
+    const avgViews = products.length > 0 ? Math.round(totalViews / products.length) : 0;
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Trending Management</h1>
-                    <p className="text-gray-600 mt-1">Manage manually trending items and view popular products</p>
+            <div>
+                <h1 className="text-3xl font-bold text-gray-900">Trending Management</h1>
+                <p className="text-gray-600 mt-1">Manage manually trending items and view popular products</p>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl p-6 text-white">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-yellow-100 text-sm font-medium">Trending Products</p>
+                            <p className="text-3xl font-bold mt-1">{trendingCount}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <Star className="h-6 w-6 fill-current" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl p-6 text-white">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-blue-100 text-sm font-medium">Total Views</p>
+                            <p className="text-3xl font-bold mt-1">{totalViews.toLocaleString()}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <Eye className="h-6 w-6" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl p-6 text-white">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-green-100 text-sm font-medium">Average Views</p>
+                            <p className="text-3xl font-bold mt-1">{avgViews}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                            <TrendingUp className="h-6 w-6" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -135,8 +176,8 @@ export default function TrendingManagement() {
                                         <button
                                             onClick={() => toggleTrending(product.id, product.isTrending)}
                                             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${product.isTrending
-                                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                                : 'bg-green-100 text-green-700 hover:bg-green-200'
                                                 }`}
                                         >
                                             {product.isTrending ? 'Remove Trending' : 'Mark Trending'}
@@ -146,6 +187,14 @@ export default function TrendingManagement() {
                             ))}
                         </tbody>
                     </table>
+
+                    {filteredProducts.length === 0 && !loading && (
+                        <div className="text-center py-12">
+                            <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                            <p className="text-gray-500 font-medium">No products found</p>
+                            <p className="text-sm text-gray-400 mt-1">Try a different search term or check back later</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

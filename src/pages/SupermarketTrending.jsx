@@ -227,36 +227,48 @@ export default function SupermarketTrending() {
                     </h2>
 
                     <div className="space-y-3">
-                        {trendingItems.map((item) => (
-                            <Link
-                                key={item.id}
-                                to={`/product/${item.id}`}
-                                className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-100"
-                            >
-                                {/* Product Image */}
-                                <div className="w-14 h-14 bg-white rounded-lg shadow-sm flex items-center justify-center flex-shrink-0">
-                                    <img src={item.image} alt={item.name} className="w-12 h-12 object-contain" />
-                                </div>
-
-                                {/* Product Info */}
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">{item.name}</h3>
-                                    <p className="text-xs text-gray-500">{item.category}</p>
-                                </div>
-
-                                {/* Price & Trend */}
-                                <div className="text-right flex-shrink-0">
-                                    <div className="font-bold text-gray-900 text-lg">KES {item.currentPrice}</div>
-                                    <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getTrendColor(item.trend)}`}>
-                                        {getTrendIcon(item.trend)}
-                                        {item.trend !== 'stable' && (
-                                            <span>{Math.abs(item.priceChange)} ({Math.abs(item.priceChangePercent)}%)</span>
-                                        )}
-                                        {item.trend === 'stable' && <span>Stable</span>}
+                        {loading ? (
+                            <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                            </div>
+                        ) : trendingItems.length > 0 ? (
+                            trendingItems.map((item) => (
+                                <Link
+                                    key={item.id}
+                                    to={`/product/${item.id}`}
+                                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-100"
+                                >
+                                    {/* Product Image */}
+                                    <div className="w-14 h-14 bg-white rounded-lg shadow-sm flex items-center justify-center flex-shrink-0">
+                                        <img src={item.image} alt={item.name} className="w-12 h-12 object-contain" />
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
+
+                                    {/* Product Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">{item.name}</h3>
+                                        <p className="text-xs text-gray-500">{item.category}</p>
+                                    </div>
+
+                                    {/* Price & Trend */}
+                                    <div className="text-right flex-shrink-0">
+                                        <div className="font-bold text-gray-900 text-lg">KES {item.currentPrice}</div>
+                                        <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getTrendColor(item.trend)}`}>
+                                            {getTrendIcon(item.trend)}
+                                            {item.trend !== 'stable' && (
+                                                <span>{Math.abs(item.priceChange)} ({Math.abs(item.priceChangePercent)}%)</span>
+                                            )}
+                                            {item.trend === 'stable' && <span>Stable</span>}
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="text-center py-12">
+                                <TrendingUp className={`h-12 w-12 ${getIconColor()} mx-auto mb-3 opacity-50`} />
+                                <p className="text-gray-500 font-medium">No trending items yet</p>
+                                <p className="text-sm text-gray-400 mt-1">Check back later for popular products at {supermarket.name}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
