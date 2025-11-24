@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
+import { CATEGORIES } from '../../lib/types';
 
 export default function ProductsManagement() {
     const [products, setProducts] = useState([]);
@@ -43,6 +44,20 @@ export default function ProductsManagement() {
                 console.error('Error deleting product:', error);
                 alert('Failed to delete product');
             }
+        }
+    };
+
+    const handleUpdate = async (productId, updatedData) => {
+        try {
+            await updateDoc(doc(db, 'products', productId), {
+                ...updatedData,
+                updatedAt: new Date()
+            });
+            setProducts(products.map(p => p.id === productId ? { ...p, ...updatedData } : p));
+            setEditingProduct(null);
+        } catch (error) {
+            console.error('Error updating product:', error);
+            alert('Failed to update product');
         }
     };
 
@@ -167,6 +182,133 @@ export default function ProductsManagement() {
                         <p className="text-gray-500">No products found</p>
                     </div>
                 )}
+            </div>
+
+            {/* Edit Modal */}
+            {editingProduct && (
+                <EditProductModal
+                    product={editingProduct}
+                    onClose={() => setEditingProduct(null)}
+                    onSave={handleUpdate}
+                />
+            )}
+        </div>
+    );
+}
+
+function EditProductModal({ product, onClose, onSave }) {
+    const [formData, setFormData] = useState({
+        name: product.name || '',
+        category: product.category || '',
+        image: product.image || '',
+        active: product.active !== false
+    });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(product.id, formData);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-900">Edit Product</h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                        <X className="h-5 w-5 text-gray-500" />
+                    </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    {/* Product Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Product Name
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            required
+                        />
+                    </div>
+
+                    {/* Category */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Category
+                        </label>
+                        <select
+                            value={formData.category}
+                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            required
+                        >
+                            <option value="">Select category</option>
+                            {CATEGORIES.map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Image URL */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Image URL
+                        </label>
+                        <input
+                            type="url"
+                            value={formData.image}
+                            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="https://example.com/image.jpg"
+                        />
+                        {formData.image && (
+                            <img
+                                src={formData.image}
+                                alt="Preview"
+                                className="mt-2 h-20 w-20 object-contain rounded-lg border border-gray-200"
+                            />
+                        )}
+                    </div>
+
+                    {/* Active Status */}
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="active"
+                            checked={formData.active}
+                            onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="active" className="ml-2 block text-sm text-gray-700">
+                            Active (visible on public site)
+                        </label>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );
