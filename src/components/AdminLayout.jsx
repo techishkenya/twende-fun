@@ -11,7 +11,8 @@ import {
     LogOut,
     Menu,
     X,
-    TrendingUp
+    TrendingUp,
+    Server
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -76,6 +77,7 @@ export default function AdminLayout() {
         { path: '/admin/supermarkets', label: 'Supermarkets', icon: Store },
         { path: '/admin/submissions', label: 'Submissions', icon: UserCheck },
         { path: '/admin/users', label: 'Users', icon: Users },
+        { path: '/admin/data-utility', label: 'Data Utility', icon: Server },
     ];
 
     return (

@@ -15,11 +15,10 @@ export default function PrivateRoute({ children }) {
                 try {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists() && userDoc.data().role === 'admin') {
-                        setIsAdmin(true);
-                        localStorage.setItem('isAdmin', 'true');
+
                     } else {
                         setIsAdmin(false);
-                        localStorage.removeItem('isAdmin');
+
                     }
                 } catch (error) {
                     console.error('Error checking admin status:', error);
@@ -27,7 +26,6 @@ export default function PrivateRoute({ children }) {
                 }
             } else {
                 setIsAdmin(false);
-                localStorage.removeItem('isAdmin');
             }
             setChecking(false);
         }

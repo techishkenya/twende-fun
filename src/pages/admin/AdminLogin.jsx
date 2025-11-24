@@ -1,18 +1,16 @@
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, AlertCircle, Loader, Database } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 
 export default function AdminLogin() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
-    const [initMode, setInitMode] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -30,7 +28,7 @@ export default function AdminLogin() {
 
             if (userDoc.exists() && userDoc.data().role === 'admin') {
                 // Store admin status
-                localStorage.setItem('isAdmin', 'true');
+
                 navigate('/admin/dashboard');
             } else {
                 console.error('Admin check failed: User document missing or role not admin');
@@ -51,11 +49,7 @@ export default function AdminLogin() {
         }
     };
 
-    const handleInitialize = async () => {
-        // Initialization logic removed for security.
-        // Use Firebase Console to create the first admin user manually.
-        alert('Please contact the system administrator to set up the initial admin account.');
-    };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-primary-600 to-secondary-600 flex items-center justify-center p-4">
@@ -74,11 +68,7 @@ export default function AdminLogin() {
                             {error}
                         </div>
                     )}
-                    {success && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-                            {success}
-                        </div>
-                    )}
+
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -127,37 +117,13 @@ export default function AdminLogin() {
                     </button>
                 </form>
 
-                <div className="mt-6 flex flex-col items-center gap-4">
+                <div className="mt-6 text-center">
                     <button
                         onClick={() => navigate('/')}
                         className="text-sm text-gray-600 hover:text-gray-900"
                     >
                         ← Back to App
                     </button>
-
-                    <div className="w-full border-t pt-4">
-                        <button
-                            onClick={() => setInitMode(!initMode)}
-                            className="text-xs text-gray-400 hover:text-primary-600 w-full text-center"
-                        >
-                            System Setup
-                        </button>
-
-                        {initMode && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                <p className="text-xs text-gray-600 mb-3 text-center">
-                                    First time? Initialize the system with default admin and data.
-                                </p>
-                                <button
-                                    onClick={handleInitialize}
-                                    disabled={loading}
-                                    className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
-                                >
-                                    {loading ? 'Initializing...' : 'Initialize System'}
-                                </button>
-                            </div>
-                        )}
-                    </div>
                 </div>
             </div>
         </div>

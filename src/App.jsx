@@ -22,6 +22,7 @@ import TrendingManagement from './pages/admin/TrendingManagement';
 import SupermarketsManagement from './pages/admin/SupermarketsManagement';
 import SubmissionsManagement from './pages/admin/SubmissionsManagement';
 import UsersManagement from './pages/admin/UsersManagement';
+import DataUtility from './pages/admin/DataUtility';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
             <Route path="supermarkets" element={<SupermarketsManagement />} />
             <Route path="submissions" element={<SubmissionsManagement />} />
             <Route path="users" element={<UsersManagement />} />
+            <Route path="data-utility" element={<DataUtility />} />
           </Route>
         </Routes>
       </Router>
