@@ -19,7 +19,8 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
 import PricesManagement from './pages/admin/PricesManagement';
-import { SupermarketsManagement, SubmissionsManagement, UsersManagement } from './pages/admin/AdminPlaceholders';
+import SupermarketsManagement from './pages/admin/SupermarketsManagement';
+import { SubmissionsManagement, UsersManagement } from './pages/admin/AdminPlaceholders';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
