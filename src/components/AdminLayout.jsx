@@ -1,6 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { auth } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
+import { useAuth } from '../context/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import {
     LayoutDashboard,
     Package,
@@ -9,28 +10,69 @@ import {
     Users,
     LogOut,
     Menu,
-    X
+    X,
+    TrendingUp
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AdminLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { currentUser, logout } = useAuth();
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const checkAdmin = async () => {
+            if (!currentUser) {
+                navigate('/admin/login');
+                return;
+            }
+
+            try {
+                // Check if user has admin role in Firestore
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                if (userDoc.exists() && userDoc.data().role === 'admin') {
+                    setIsAdmin(true);
+                } else {
+                    console.error('Access denied: User is not an admin');
+                    navigate('/');
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                navigate('/');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        checkAdmin();
+    }, [currentUser, navigate]);
 
     const handleLogout = async () => {
         try {
-            await signOut(auth);
-            localStorage.removeItem('isAdmin');
+            await logout();
             navigate('/admin/login');
         } catch (error) {
             console.error('Logout error:', error);
         }
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
+        );
+    }
+
+    if (!isAdmin) return null;
+
     const navItems = [
         { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/admin/products', label: 'Products & Pricing', icon: Package },
+        { path: '/admin/trending', label: 'Trending', icon: TrendingUp },
         { path: '/admin/supermarkets', label: 'Supermarkets', icon: Store },
         { path: '/admin/submissions', label: 'Submissions', icon: UserCheck },
         { path: '/admin/users', label: 'Users', icon: Users },

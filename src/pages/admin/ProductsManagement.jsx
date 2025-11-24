@@ -9,7 +9,11 @@ export default function ProductsManagement() {
     const [products, setProducts] = useState([]);
     const [prices, setPrices] = useState({});
     const [categories, setCategories] = useState([]);
-    const [loading, setLoading] = useState(true);
+
+    // Loading states
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
+    const [productsLoading, setProductsLoading] = useState(false);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [editingProduct, setEditingProduct] = useState(null);
@@ -20,23 +24,29 @@ export default function ProductsManagement() {
     // Fetch supermarkets dynamically
     const { supermarkets, loading: supermarketsLoading } = useSupermarkets();
 
+    // Initial fetch for categories
     useEffect(() => {
-        fetchData();
+        fetchCategories();
     }, []);
 
-    const fetchData = async () => {
-        try {
-            // Fetch categories
-            const categoriesSnapshot = await getDocs(collection(db, 'categories'));
-            if (categoriesSnapshot.empty) {
-                // Initialize with default categories
-                const defaultCats = DEFAULT_CATEGORIES.map(cat => ({ name: cat, productCount: 0 }));
-                setCategories(defaultCats);
+    // Fetch products when category is selected or initially (if we want to show counts)
+    useEffect(() => {
+        fetchProductsAndPrices();
+    }, []);
 
-                // Save to Firestore
-                for (const cat of defaultCats) {
-                    await addDoc(collection(db, 'categories'), cat);
-                }
+    const fetchCategories = async () => {
+        try {
+            setCategoriesLoading(true);
+            const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+
+            if (categoriesSnapshot.empty) {
+                // Fallback for display only, don't write to DB here to avoid race conditions
+                const defaultCats = DEFAULT_CATEGORIES.map(cat => ({
+                    id: cat.toLowerCase().replace(/\s+/g, '-'),
+                    name: cat,
+                    productCount: 0
+                }));
+                setCategories(defaultCats);
             } else {
                 const catsList = categoriesSnapshot.docs.map(doc => ({
                     id: doc.id,
@@ -44,27 +54,41 @@ export default function ProductsManagement() {
                 }));
                 setCategories(catsList);
             }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            // Fallback on error
+            setCategories(DEFAULT_CATEGORIES.map(cat => ({ name: cat, productCount: 0 })));
+        } finally {
+            setCategoriesLoading(false);
+        }
+    };
 
-            // Fetch products
-            const productsSnapshot = await getDocs(collection(db, 'products'));
+    const fetchProductsAndPrices = async () => {
+        try {
+            setProductsLoading(true);
+
+            // Parallel fetch
+            const [productsSnapshot, pricesSnapshot] = await Promise.all([
+                getDocs(collection(db, 'products')),
+                getDocs(collection(db, 'prices'))
+            ]);
+
             const productsList = productsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setProducts(productsList);
 
-            // Fetch all prices
-            const pricesSnapshot = await getDocs(collection(db, 'prices'));
             const pricesMap = {};
             pricesSnapshot.docs.forEach(doc => {
                 pricesMap[doc.id] = doc.data().prices;
             });
             setPrices(pricesMap);
 
-            setLoading(false);
         } catch (error) {
-            console.error('Error fetching data:', error);
-            setLoading(false);
+            console.error('Error fetching products/prices:', error);
+        } finally {
+            setProductsLoading(false);
         }
     };
 
@@ -82,12 +106,13 @@ export default function ProductsManagement() {
 
     const handleAddCategory = async (categoryName) => {
         try {
-            const docRef = await addDoc(collection(db, 'categories'), {
+            const categoryId = categoryName.toLowerCase().replace(/\s+/g, '-');
+            await setDoc(doc(db, 'categories', categoryId), {
                 name: categoryName,
                 productCount: 0,
                 createdAt: new Date()
             });
-            setCategories([...categories, { id: docRef.id, name: categoryName, productCount: 0 }]);
+            setCategories([...categories, { id: categoryId, name: categoryName, productCount: 0 }]);
             setShowAddCategory(false);
         } catch (error) {
             console.error('Error adding category:', error);
@@ -196,38 +221,87 @@ export default function ProductsManagement() {
         }
     };
 
-    if (loading || supermarketsLoading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            </div>
-        );
-    }
-
-    // Category Grid View
-    if (!selectedCategory) {
-        return (
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Products & Pricing Management</h1>
-                        <p className="text-gray-600 mt-1">Select a category to manage products</p>
-                    </div>
-                    <button
-                        onClick={() => setShowAddCategory(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
-                    >
-                        <Plus className="h-5 w-5" />
-                        Add Category
-                    </button>
+    // Main Render
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Products & Pricing</h1>
+                    <p className="text-gray-600 mt-1">
+                        {selectedCategory
+                            ? `Managing ${selectedCategory}`
+                            : 'Select a category to manage products'}
+                    </p>
                 </div>
+                {!selectedCategory && (
+                    <div className="flex gap-2">
+                        <button
+                            onClick={async () => {
+                                if (confirm('This will re-initialize default categories. Continue?')) {
+                                    try {
+                                        setCategoriesLoading(true);
+                                        for (const cat of DEFAULT_CATEGORIES) {
+                                            const categoryId = cat.toLowerCase().replace(/\s+/g, '-');
+                                            await setDoc(doc(db, 'categories', categoryId), {
+                                                name: cat,
+                                                productCount: 0,
+                                                createdAt: new Date()
+                                            });
+                                        }
+                                        alert('Categories initialized!');
+                                        fetchCategories();
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert('Error initializing categories');
+                                    } finally {
+                                        setCategoriesLoading(false);
+                                    }
+                                }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors text-sm"
+                        >
+                            Initialize Defaults
+                        </button>
+                        <button
+                            onClick={() => setShowAddCategory(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
+                        >
+                            <Plus className="h-5 w-5" />
+                            Add Category
+                        </button>
+                    </div>
+                )}
+                {selectedCategory && (
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setSelectedCategory(null)}
+                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                            Back
+                        </button>
+                        <button
+                            onClick={() => setShowAddProduct(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
+                        >
+                            <Plus className="h-5 w-5" />
+                            Add Product
+                        </button>
+                    </div>
+                )}
+            </div>
 
-                {/* Categories Grid */}
+            {/* Content Area */}
+            {categoriesLoading ? (
+                <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                </div>
+            ) : !selectedCategory ? (
+                // Categories Grid
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {categories.map((category) => {
                         const productCount = getCategoryProductCount(category.name);
-
                         return (
                             <div
                                 key={category.id || category.name}
@@ -245,7 +319,7 @@ export default function ProductsManagement() {
                                                     {category.name}
                                                 </h3>
                                                 <p className="text-sm text-gray-500">
-                                                    {productCount} {productCount === 1 ? 'product' : 'products'}
+                                                    {productsLoading ? '...' : `${productCount} products`}
                                                 </p>
                                             </div>
                                         </div>
@@ -265,233 +339,210 @@ export default function ProductsManagement() {
                             </div>
                         );
                     })}
+                    {categories.length === 0 && (
+                        <div className="col-span-full text-center py-12">
+                            <p className="text-gray-500">No categories found.</p>
+                        </div>
+                    )}
                 </div>
-
-                {/* Add Category Modal */}
-                {showAddCategory && (
-                    <AddCategoryModal
-                        onClose={() => setShowAddCategory(false)}
-                        onSave={handleAddCategory}
-                    />
-                )}
-            </div>
-        );
-    }
-
-    // Products List View (when category is selected)
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setSelectedCategory(null)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        <ArrowLeft className="h-6 w-6 text-gray-600" />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">{selectedCategory}</h1>
-                        <p className="text-gray-600 mt-1">{filteredProducts.length} products</p>
+            ) : (
+                // Products List
+                <div className="space-y-6">
+                    {/* Search */}
+                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            />
+                        </div>
                     </div>
-                </div>
-                <button
-                    onClick={() => setShowAddProduct(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
-                >
-                    <Plus className="h-5 w-5" />
-                    Add Product
-                </button>
-            </div>
 
-            {/* Search */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search products..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                </div>
-            </div>
+                    {/* Products Grid */}
+                    <div className="space-y-4">
+                        {filteredProducts.map((product) => {
+                            const productPrices = prices[product.id] || {};
+                            const cheapest = getCheapestPrice(productPrices);
+                            const isEditingPrices = editingPrices[product.id];
 
-            {/* Products List */}
-            <div className="space-y-4">
-                {filteredProducts.map((product) => {
-                    const productPrices = prices[product.id] || {};
-                    const cheapest = getCheapestPrice(productPrices);
-                    const isEditingPrices = editingPrices[product.id];
+                            return (
+                                <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    {/* Product Header */}
+                                    <div className="p-6 border-b border-gray-100">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-start gap-4">
+                                                <img
+                                                    src={product.image}
+                                                    alt={product.name}
+                                                    className="h-16 w-16 object-contain rounded-lg border border-gray-200"
+                                                />
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-gray-900">{product.name}</h3>
+                                                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mt-1">
+                                                        {product.category}
+                                                    </span>
+                                                    {cheapest && (
+                                                        <p className="text-sm text-gray-600 mt-2 flex items-center gap-1">
+                                                            <TrendingUp className="h-4 w-4 text-green-600" />
+                                                            Best Price: KES {cheapest.price} at {cheapest.supermarket}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setEditingProduct(product)}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteProduct(product.id)}
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                    return (
-                        <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                            {/* Product Header */}
-                            <div className="p-6 border-b border-gray-100">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start gap-4">
-                                        <img
-                                            src={product.image}
-                                            alt={product.name}
-                                            className="h-16 w-16 object-contain rounded-lg border border-gray-200"
-                                        />
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">{product.name}</h3>
-                                            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mt-1">
-                                                {product.category}
-                                            </span>
-                                            {cheapest && (
-                                                <p className="text-sm text-gray-600 mt-2 flex items-center gap-1">
-                                                    <TrendingUp className="h-4 w-4 text-green-600" />
-                                                    Best Price: KES {cheapest.price} at {cheapest.supermarket}
-                                                </p>
+                                    {/* Prices Grid */}
+                                    <div className="p-6 bg-gray-50">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="font-semibold text-gray-900">Prices Across Supermarkets</h4>
+                                            {!isEditingPrices ? (
+                                                <button
+                                                    onClick={() => setEditingPrices({ ...editingPrices, [product.id]: { ...productPrices } })}
+                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                >
+                                                    Edit Prices
+                                                </button>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            const newEditingPrices = { ...editingPrices };
+                                                            delete newEditingPrices[product.id];
+                                                            setEditingPrices(newEditingPrices);
+                                                        }}
+                                                        className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleUpdatePrices(product.id, isEditingPrices)}
+                                                        className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
+                                                    >
+                                                        <Save className="h-4 w-4" />
+                                                        Save
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setEditingProduct(product)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                        >
-                                            <Edit2 className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteProduct(product.id)}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Prices Grid */}
-                            <div className="p-6 bg-gray-50">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h4 className="font-semibold text-gray-900">Prices Across Supermarkets</h4>
-                                    {!isEditingPrices ? (
-                                        <button
-                                            onClick={() => setEditingPrices({ ...editingPrices, [product.id]: { ...productPrices } })}
-                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                        >
-                                            Edit Prices
-                                        </button>
-                                    ) : (
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    const newEditingPrices = { ...editingPrices };
-                                                    delete newEditingPrices[product.id];
-                                                    setEditingPrices(newEditingPrices);
-                                                }}
-                                                className="text-sm text-gray-600 hover:text-gray-700 font-medium"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                onClick={() => handleUpdatePrices(product.id, isEditingPrices)}
-                                                className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
-                                            >
-                                                <Save className="h-4 w-4" />
-                                                Save
-                                            </button>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            {supermarkets.map((supermarket) => {
+                                                const priceData = isEditingPrices
+                                                    ? isEditingPrices[supermarket.id]
+                                                    : productPrices[supermarket.id];
+                                                const price = priceData?.price || 0;
+                                                const location = priceData?.location || '';
+                                                const colorClass = getSupermarketColor(supermarket.id);
+                                                const isCheapest = cheapest?.supermarket === supermarket.id;
+
+                                                return (
+                                                    <div
+                                                        key={supermarket.id}
+                                                        className={`p-4 rounded-lg border-2 ${isCheapest && !isEditingPrices
+                                                            ? `border-${colorClass} bg-${colorClass}/5`
+                                                            : 'border-gray-200 bg-white'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className={`w-8 h-8 rounded-full bg-${colorClass} flex items-center justify-center text-white font-bold text-sm`}>
+                                                                {supermarket.name.charAt(0)}
+                                                            </div>
+                                                            <span className="font-semibold text-gray-900 text-sm">{supermarket.name}</span>
+                                                        </div>
+
+                                                        {isEditingPrices ? (
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    type="number"
+                                                                    value={price}
+                                                                    onChange={(e) => setEditingPrices({
+                                                                        ...editingPrices,
+                                                                        [product.id]: {
+                                                                            ...isEditingPrices,
+                                                                            [supermarket.id]: {
+                                                                                ...priceData,
+                                                                                price: parseInt(e.target.value) || 0
+                                                                            }
+                                                                        }
+                                                                    })}
+                                                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                                                    placeholder="Price"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    value={location}
+                                                                    onChange={(e) => setEditingPrices({
+                                                                        ...editingPrices,
+                                                                        [product.id]: {
+                                                                            ...isEditingPrices,
+                                                                            [supermarket.id]: {
+                                                                                ...priceData,
+                                                                                location: e.target.value
+                                                                            }
+                                                                        }
+                                                                    })}
+                                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                                                    placeholder="Location"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div>
+                                                                <p className={`text-xl font-bold ${isCheapest ? `text-${colorClass}` : 'text-gray-900'}`}>
+                                                                    KES {price}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500">{location || 'No location'}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {supermarkets.map((supermarket) => {
-                                        const priceData = isEditingPrices
-                                            ? isEditingPrices[supermarket.id]
-                                            : productPrices[supermarket.id];
-                                        const price = priceData?.price || 0;
-                                        const location = priceData?.location || '';
-                                        const colorClass = getSupermarketColor(supermarket.id);
-                                        const isCheapest = cheapest?.supermarket === supermarket.id;
-
-                                        return (
-                                            <div
-                                                key={supermarket.id}
-                                                className={`p-4 rounded-lg border-2 ${isCheapest && !isEditingPrices
-                                                    ? `border-${colorClass} bg-${colorClass}/5`
-                                                    : 'border-gray-200 bg-white'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className={`w-8 h-8 rounded-full bg-${colorClass} flex items-center justify-center text-white font-bold text-sm`}>
-                                                        {supermarket.name.charAt(0)}
-                                                    </div>
-                                                    <span className="font-semibold text-gray-900 text-sm">{supermarket.name}</span>
-                                                </div>
-
-                                                {isEditingPrices ? (
-                                                    <div className="space-y-2">
-                                                        <input
-                                                            type="number"
-                                                            value={price}
-                                                            onChange={(e) => setEditingPrices({
-                                                                ...editingPrices,
-                                                                [product.id]: {
-                                                                    ...isEditingPrices,
-                                                                    [supermarket.id]: {
-                                                                        ...priceData,
-                                                                        price: parseInt(e.target.value) || 0
-                                                                    }
-                                                                }
-                                                            })}
-                                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
-                                                            placeholder="Price"
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            value={location}
-                                                            onChange={(e) => setEditingPrices({
-                                                                ...editingPrices,
-                                                                [product.id]: {
-                                                                    ...isEditingPrices,
-                                                                    [supermarket.id]: {
-                                                                        ...priceData,
-                                                                        location: e.target.value
-                                                                    }
-                                                                }
-                                                            })}
-                                                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
-                                                            placeholder="Location"
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <p className={`text-xl font-bold ${isCheapest ? `text-${colorClass}` : 'text-gray-900'}`}>
-                                                            KES {price}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">{location || 'No location'}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                            );
+                        })}
+                        {filteredProducts.length === 0 && (
+                            <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
+                                <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                                <p className="text-gray-500">No products in this category yet</p>
+                                <button
+                                    onClick={() => setShowAddProduct(true)}
+                                    className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
+                                >
+                                    Add your first product
+                                </button>
                             </div>
-                        </div>
-                    );
-                })}
-
-                {filteredProducts.length === 0 && (
-                    <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
-                        <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-500">No products in this category yet</p>
-                        <button
-                            onClick={() => setShowAddProduct(true)}
-                            className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
-                        >
-                            Add your first product
-                        </button>
+                        )}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Modals */}
+            {showAddCategory && (
+                <AddCategoryModal
+                    onClose={() => setShowAddCategory(false)}
+                    onSave={handleAddCategory}
+                />
+            )}
             {editingProduct && (
                 <EditProductModal
                     product={editingProduct}
@@ -500,7 +551,6 @@ export default function ProductsManagement() {
                     onSave={handleUpdateProduct}
                 />
             )}
-
             {showAddProduct && (
                 <AddProductModal
                     category={selectedCategory}

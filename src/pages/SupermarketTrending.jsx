@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, MapPin, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { SUPERMARKETS } from '../lib/types';
-import { getTrendingItems } from '../lib/trendingData';
 
 export default function SupermarketTrending() {
     const { id } = useParams();
@@ -28,7 +29,71 @@ export default function SupermarketTrending() {
         );
     }
 
-    const trendingItems = getTrendingItems(id);
+    const [trendingItems, setTrendingItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchTrending = async () => {
+            try {
+                // Fetch products that are either manually trending OR have high views
+                // Note: Complex OR queries are limited in Firestore, so we'll fetch top viewed and filter client-side or do two queries
+
+                // For simplicity and robustness without complex indexes:
+                // Fetch all products, sort by a score (isTrending * 1000 + viewCount)
+                const snapshot = await getDocs(collection(db, 'products'));
+                const allProducts = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Calculate a "trending score"
+                const scoredProducts = allProducts.map(p => ({
+                    ...p,
+                    score: (p.isTrending ? 10000 : 0) + (p.viewCount || 0)
+                }));
+
+                // Sort by score desc
+                scoredProducts.sort((a, b) => b.score - a.score);
+
+                // Take top 20
+                const topProducts = scoredProducts.slice(0, 20);
+
+                // Now fetch prices for these products to display current price
+                // This is N+1 but for 20 items it's acceptable for now, or we could store cached price in product
+                // Assuming we need to fetch prices:
+                const itemsWithPrices = await Promise.all(topProducts.map(async (p) => {
+                    // Fetch price for THIS supermarket
+                    // If we stored prices in a subcollection or separate collection 'prices'
+                    // We need to find the price document for this product
+                    try {
+                        const priceDoc = await getDoc(doc(db, 'prices', p.id));
+                        if (priceDoc.exists()) {
+                            const pricesData = priceDoc.data().prices;
+                            const myPrice = pricesData[id]?.price || 0;
+                            return {
+                                ...p,
+                                currentPrice: myPrice,
+                                trend: 'stable', // We'd need historical data for real trend, mocking for now
+                                priceChange: 0,
+                                priceChangePercent: 0
+                            };
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                    return { ...p, currentPrice: 0, trend: 'stable', priceChange: 0, priceChangePercent: 0 };
+                }));
+
+                setTrendingItems(itemsWithPrices.filter(p => p.currentPrice > 0)); // Only show if it has a price here
+            } catch (error) {
+                console.error("Error fetching trending:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTrending();
+    }, [id]);
     const displayedLocations = showAllLocations ? supermarket.locations : supermarket.locations.slice(0, 6);
 
     // Get color classes based on supermarket

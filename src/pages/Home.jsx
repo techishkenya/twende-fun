@@ -18,9 +18,9 @@ export default function Home() {
                         <h1 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold tracking-tight">TRACKER KE v1.0</h1>
                         <p className="text-blue-100 text-sm md:text-base">Compare prices, save money. 🚀</p>
                     </div>
-                    <div className="h-10 w-10 md:h-12 md:w-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-lg md:text-xl font-bold">
+                    <Link to="/profile" className="h-10 w-10 md:h-12 md:w-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-lg md:text-xl font-bold hover:bg-white/30 transition-colors">
                         T
-                    </div>
+                    </Link>
                 </div>
                 <SearchBar />
             </header>

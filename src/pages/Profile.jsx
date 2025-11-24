@@ -1,17 +1,43 @@
 import { useAuth } from '../context/AuthContext';
-import { User, Settings, LogOut, Award, ShoppingBag, ArrowLeft, ChevronRight } from 'lucide-react';
+import { User, Settings, LogOut, Award, ShoppingBag, ArrowLeft, ChevronRight, LogIn } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Profile() {
-    const { currentUser, logout } = useAuth();
+    const { currentUser, loginWithGoogle, logout } = useAuth();
     const navigate = useNavigate();
 
-    // Mock user data if not fully authenticated
-    const user = currentUser || {
-        displayName: 'Guest User',
-        phoneNumber: '+254 7XX XXX XXX',
-        photoURL: null
+    const handleLogin = async () => {
+        try {
+            await loginWithGoogle();
+        } catch (error) {
+            console.error('Failed to login', error);
+        }
     };
+
+    if (!currentUser) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 pb-24">
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-sm text-center">
+                    <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <User className="h-10 w-10 text-primary-600" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Twende</h1>
+                    <p className="text-gray-500 mb-8">Sign in to track prices, earn points, and contribute to the community.</p>
+
+                    <button
+                        onClick={handleLogin}
+                        className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                        Continue with Google
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Mock user data if not fully authenticated
+    const user = currentUser;
 
     const stats = [
         { label: 'Points', value: '1,250', icon: Award, color: 'text-yellow-500', bg: 'bg-yellow-50' },
@@ -32,9 +58,9 @@ export default function Profile() {
                 </div>
 
                 <div className="flex items-center space-x-4 mb-8">
-                    <div className="h-20 w-20 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-2xl font-bold border-4 border-white shadow-sm">
+                    <div className="h-20 w-20 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-2xl font-bold border-4 border-white shadow-sm overflow-hidden">
                         {user.photoURL ? (
-                            <img src={user.photoURL} alt="Profile" className="h-full w-full rounded-full object-cover" />
+                            <img src={user.photoURL} alt="Profile" className="h-full w-full object-cover" />
                         ) : (
                             <User className="h-10 w-10" />
                         )}
@@ -46,10 +72,10 @@ export default function Profile() {
                                 <Settings className="h-4 w-4" />
                             </Link>
                         </div>
-                        <p className="text-gray-500">{user.phoneNumber}</p>
-                        <Link to="/profile/stats" className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 hover:bg-primary-200 transition-colors">
+                        <p className="text-gray-500">{user.email}</p>
+                        <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                             Level 5 Contributor
-                        </Link>
+                        </div>
                     </div>
                 </div>
 

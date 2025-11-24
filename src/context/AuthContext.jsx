@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
-import { onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber as firebaseSignIn } from 'firebase/auth';
+import { onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber as firebaseSignIn, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -64,11 +64,26 @@ export function AuthProvider({ children }) {
         return firebaseSignIn(auth, phoneNumber, appVerifier);
     }
 
+    function loginWithGoogle() {
+        if (!auth) {
+            setCurrentUser({
+                uid: 'mock-google-user',
+                displayName: 'Mock Google User',
+                email: 'mock@example.com',
+                photoURL: 'https://via.placeholder.com/150'
+            });
+            return Promise.resolve();
+        }
+        const provider = new GoogleAuthProvider();
+        return signInWithPopup(auth, provider);
+    }
+
     const value = {
         currentUser,
         logout,
         setupRecaptcha,
-        signInWithPhoneNumber
+        signInWithPhoneNumber,
+        loginWithGoogle
     };
 
     return (

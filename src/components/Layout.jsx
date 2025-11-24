@@ -32,7 +32,7 @@ export default function Layout() {
                 </div>
             </main>
 
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50 md:hidden">
+            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50">
                 <div className="max-w-md mx-auto flex justify-around items-center h-16 px-2">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path;

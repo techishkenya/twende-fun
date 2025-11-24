@@ -1,4 +1,7 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { ArrowLeft, Share2, AlertCircle, TrendingUp, MapPin } from 'lucide-react';
 import { useProduct, usePrices, getCheapestPrice, getSupermarketColor } from '../hooks/useFirestore';
 import { SUPERMARKETS } from '../lib/types';
@@ -8,6 +11,23 @@ export default function ProductDetail() {
     const navigate = useNavigate();
     const { product, loading: productLoading, error: productError } = useProduct(id);
     const { prices, loading: pricesLoading } = usePrices(id);
+
+    // Increment view count on load
+    useEffect(() => {
+        if (id) {
+            const incrementView = async () => {
+                try {
+                    const productRef = doc(db, 'products', id);
+                    await updateDoc(productRef, {
+                        viewCount: increment(1)
+                    });
+                } catch (error) {
+                    console.error('Error incrementing view count:', error);
+                }
+            };
+            incrementView();
+        }
+    }, [id]);
 
     if (productLoading) {
         return (
@@ -76,9 +96,12 @@ export default function ProductDetail() {
                 {/* Product Info */}
                 <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100 -mt-6 relative z-10">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                    <Link
+                        to={`/search?category=${encodeURIComponent(product.category)}`}
+                        className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full hover:bg-blue-200 transition-colors"
+                    >
                         {product.category}
-                    </span>
+                    </Link>
 
                     {/* Price Stats */}
                     <div className="grid grid-cols-3 gap-4 mt-6">
@@ -117,8 +140,8 @@ export default function ProductDetail() {
                                 <div
                                     key={supermarketId}
                                     className={`bg-white rounded-xl p-4 border-2 transition-all ${isCheapest
-                                            ? `border-${colorClass} bg-${colorClass}/5`
-                                            : 'border-gray-100 hover:border-gray-200'
+                                        ? `border-${colorClass} bg-${colorClass}/5`
+                                        : 'border-gray-100 hover:border-gray-200'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">

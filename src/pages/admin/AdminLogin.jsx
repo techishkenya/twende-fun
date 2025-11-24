@@ -52,56 +52,9 @@ export default function AdminLogin() {
     };
 
     const handleInitialize = async () => {
-        setLoading(true);
-        setError('');
-        setSuccess('Initializing system...');
-
-        try {
-            // 1. Create/Repair Admin Account
-            let user;
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, 'admin@twende.fun', 'Pass1234');
-                user = userCredential.user;
-                setSuccess('Admin account created...');
-            } catch (err) {
-                if (err.code === 'auth/email-already-in-use') {
-                    setSuccess('Admin account exists. Verifying...');
-                    const userCredential = await signInWithEmailAndPassword(auth, 'admin@twende.fun', 'Pass1234');
-                    user = userCredential.user;
-                } else {
-                    throw err;
-                }
-            }
-
-            // 2. Force Admin Role
-            await setDoc(doc(db, 'users', user.uid), {
-                email: 'admin@twende.fun',
-                role: 'admin',
-                displayName: 'System Admin',
-                createdAt: new Date(),
-                badges: ['admin']
-            }, { merge: true });
-            setSuccess('Admin privileges verified...');
-
-            // 3. Initialize Database Data
-            const { initializeFirestore } = await import('../../lib/initializeFirestore');
-            const result = await initializeFirestore();
-
-            if (result.success) {
-                setSuccess('✅ System initialized! Redirecting...');
-                localStorage.setItem('isAdmin', 'true');
-                setTimeout(() => navigate('/admin/dashboard'), 1500);
-            } else {
-                throw new Error(result.error || 'Database initialization failed');
-            }
-
-        } catch (err) {
-            console.error('Init error:', err);
-            setError('Initialization failed: ' + err.message);
-            setSuccess('');
-        } finally {
-            setLoading(false);
-        }
+        // Initialization logic removed for security.
+        // Use Firebase Console to create the first admin user manually.
+        alert('Please contact the system administrator to set up the initial admin account.');
     };
 
     return (

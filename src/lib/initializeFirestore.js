@@ -24,7 +24,22 @@ export async function initializeFirestore() {
         }
         console.log(`✓ Added ${SUPERMARKETS.length} supermarkets`);
 
-        // 2. Add Products
+        // 2. Add Categories
+        console.log('Adding categories...');
+        const { CATEGORIES } = await import('./types');
+        for (const categoryName of CATEGORIES) {
+            // Create a slug-like ID for the category
+            const categoryId = categoryName.toLowerCase().replace(/\s+/g, '-');
+            const categoryRef = doc(db, 'categories', categoryId);
+            await setDoc(categoryRef, {
+                name: categoryName,
+                productCount: 0, // Initial count, will need to be calculated or updated
+                createdAt: new Date()
+            });
+        }
+        console.log(`✓ Added ${CATEGORIES.length} categories`);
+
+        // 3. Add Products
         console.log('Adding products...');
         for (const product of FMCG_PRODUCTS) {
             const productRef = doc(db, 'products', product.id);

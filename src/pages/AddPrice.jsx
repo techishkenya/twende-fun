@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Camera, Upload, MapPin, Loader2, Search, Check, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Camera, Upload, MapPin, Loader2, Search, Check, ArrowLeft, LogIn, User } from 'lucide-react';
 import { SUPERMARKETS } from '../lib/types';
 import { FMCG_PRODUCTS } from '../lib/products';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function AddPrice() {
     const navigate = useNavigate();
+    const { currentUser, loginWithGoogle } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [image, setImage] = useState(null);
@@ -18,6 +20,43 @@ export default function AddPrice() {
     const [price, setPrice] = useState('');
     const [supermarket, setSupermarket] = useState('');
     const [location, setLocation] = useState('');
+
+    const handleLogin = async () => {
+        try {
+            await loginWithGoogle();
+        } catch (error) {
+            console.error('Failed to login', error);
+        }
+    };
+
+    if (!currentUser) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 pb-24">
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-sm text-center">
+                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <User className="h-8 w-8 text-primary-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Login Required</h2>
+                    <p className="text-gray-500 mb-6">You need to be logged in to contribute prices to the community.</p>
+
+                    <button
+                        onClick={handleLogin}
+                        className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                        Continue with Google
+                    </button>
+
+                    <button
+                        onClick={() => navigate('/')}
+                        className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const handleProductSearch = (e) => {
         const value = e.target.value;
