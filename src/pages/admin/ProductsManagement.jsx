@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package } from 'lucide-react';
-import { CATEGORIES as DEFAULT_CATEGORIES, SUPERMARKETS } from '../../lib/types';
-import { getCheapestPrice, getSupermarketColor } from '../../hooks/useFirestore';
+import { CATEGORIES as DEFAULT_CATEGORIES } from '../../lib/types';
+import { getCheapestPrice, getSupermarketColor, useSupermarkets } from '../../hooks/useFirestore';
 
 export default function ProductsManagement() {
     const [products, setProducts] = useState([]);
@@ -16,6 +16,9 @@ export default function ProductsManagement() {
     const [editingPrices, setEditingPrices] = useState({});
     const [showAddCategory, setShowAddCategory] = useState(false);
     const [showAddProduct, setShowAddProduct] = useState(false);
+
+    // Fetch supermarkets dynamically
+    const { supermarkets, loading: supermarketsLoading } = useSupermarkets();
 
     useEffect(() => {
         fetchData();
@@ -123,9 +126,9 @@ export default function ProductsManagement() {
                 updatedAt: new Date()
             });
 
-            // Initialize prices for all supermarkets
+            // Initialize prices for all supermarkets (dynamic)
             const initialPrices = {};
-            SUPERMARKETS.forEach(supermarket => {
+            supermarkets.forEach(supermarket => {
                 initialPrices[supermarket.id] = {
                     price: 0,
                     location: '',
@@ -193,7 +196,7 @@ export default function ProductsManagement() {
         }
     };
 
-    if (loading) {
+    if (loading || supermarketsLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -398,7 +401,7 @@ export default function ProductsManagement() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {SUPERMARKETS.map((supermarket) => {
+                                    {supermarkets.map((supermarket) => {
                                         const priceData = isEditingPrices
                                             ? isEditingPrices[supermarket.id]
                                             : productPrices[supermarket.id];
@@ -411,8 +414,8 @@ export default function ProductsManagement() {
                                             <div
                                                 key={supermarket.id}
                                                 className={`p-4 rounded-lg border-2 ${isCheapest && !isEditingPrices
-                                                        ? `border-${colorClass} bg-${colorClass}/5`
-                                                        : 'border-gray-200 bg-white'
+                                                    ? `border-${colorClass} bg-${colorClass}/5`
+                                                    : 'border-gray-200 bg-white'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2 mb-2">
