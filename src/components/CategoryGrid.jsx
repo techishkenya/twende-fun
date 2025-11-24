@@ -23,7 +23,7 @@ export default function CategoryGrid() {
                 return (
                     <button
                         key={category}
-                        onClick={() => navigate(`/search?q=${encodeURIComponent(category)}`)}
+                        onClick={() => navigate(`/search?category=${encodeURIComponent(category)}`)}
                         className="flex flex-col items-center justify-center p-3 rounded-xl hover:bg-gray-50 transition-colors group"
                     >
                         <div className="p-3 bg-primary-50 text-primary-600 rounded-full mb-2 group-hover:bg-primary-100 transition-colors">

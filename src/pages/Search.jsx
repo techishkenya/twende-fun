@@ -1,15 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search as SearchIcon, Filter, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useProducts } from '../hooks/useFirestore';
 import { CATEGORIES } from '../lib/types';
-import PriceCard from '../components/PriceCard';
+import ProductCard from '../components/ProductCard';
 
 export default function SearchPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [query, setQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
     const { products, loading } = useProducts();
+
+    // Read category from URL on mount
+    useEffect(() => {
+        const categoryParam = searchParams.get('category');
+        if (categoryParam && CATEGORIES.includes(categoryParam)) {
+            setActiveCategory(categoryParam);
+        }
+    }, [searchParams]);
 
     const filteredProducts = products.filter(product => {
         const matchesQuery = product.name.toLowerCase().includes(query.toLowerCase());
@@ -49,22 +58,22 @@ export default function SearchPage() {
                     <button
                         onClick={() => setActiveCategory('All')}
                         className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === 'All'
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                     >
                         All
                     </button>
                     {CATEGORIES.map((category) => (
                         <button
-                            key={category.id}
-                            onClick={() => setActiveCategory(category.name)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === category.name
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            key={category}
+                            onClick={() => setActiveCategory(category)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === category
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
-                            {category.name}
+                            {category}
                         </button>
                     ))}
                 </div>
@@ -79,12 +88,12 @@ export default function SearchPage() {
                 ) : filteredProducts.length > 0 ? (
                     <div className="grid grid-cols-2 gap-4">
                         {filteredProducts.map((product) => (
-                            <PriceCard key={product.id} product={product} />
+                            <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
                 ) : (
                     <div className="text-center py-12">
-                        <p className="text-gray-500">No products found matching "{query}"</p>
+                        <p className="text-gray-500">No products found{query && ` matching "${query}"`}</p>
                     </div>
                 )}
             </div>
