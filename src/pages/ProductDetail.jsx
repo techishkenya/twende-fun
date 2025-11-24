@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, TrendingUp, TrendingDown, Minus, Share2, AlertCircle } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import PriceCard from '../components/PriceCard';
 import { useProduct, usePrices } from '../hooks/useFirestore';
+import { SUPERMARKETS } from '../lib/types';
 
 export default function ProductDetail() {
     const { id } = useParams();
@@ -42,41 +44,31 @@ export default function ProductDetail() {
         ? Math.round(prices.reduce((acc, curr) => acc + curr.price, 0) / prices.length)
         : 0;
 
+    // Prepare price history data for chart
+    const priceHistory = prices
+        .map(price => ({
+            date: price.timestamp?.toDate?.()?.toLocaleDateString() || 'N/A',
+            price: price.price,
+            supermarket: SUPERMARKETS.find(s => s.id === price.supermarketId)?.name || 'Unknown',
+            timestamp: price.timestamp?.toDate?.() || new Date()
+        }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
             {/* Header Image */}
             <div className="relative h-72 bg-white">
                 <div className="absolute inset-0 p-6 flex flex-col justify-between z-10">
                     <div className="flex justify-between items-start">
                         <button
                             onClick={() => navigate(-1)}
-                            className="p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
+                            className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
                         >
-                            <ArrowLeft className="h-6 w-6 text-gray-700" />
+                            <ArrowLeft className="h-6 w-6 text-gray-900" />
                         </button>
-                        <button className="p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors">
-                            <Share2 className="h-6 w-6 text-gray-700" />
+                        <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors">
+                            <Share2 className="h-6 w-6 text-gray-900" />
                         </button>
-                    </div>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center p-8">
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-contain"
-                    />
-                </div>
-            </div>
-
-            {/* Content Container */}
-            <div className="-mt-6 relative z-20 bg-gray-50 rounded-t-[2rem] px-6 pt-8">
-                <div className="flex justify-between items-start mb-2">
-                    <div>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                            {product.category}
-                        </span>
-                        <h1 className="text-2xl font-bold text-gray-900 mt-3 mb-1">{product.name}</h1>
-                        <p className="text-gray-500 text-sm">{product.size || 'Standard Size'}</p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-gray-500 mb-1">Best Price</p>
@@ -100,71 +92,93 @@ export default function ProductDetail() {
                     </div>
                 </div>
 
-                {/* Price List */}
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Current Prices</h2>
-                <div className="space-y-4">
-                    {pricesLoading ? (
-                        <div className="text-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                {/* Product Image */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <img
+                        src={product.image}
+                        alt={product.name}
+                        className="h-48 w-48 object-contain"
+                    />
+                </div>
+            </div>
+
+            {/* Product Info */}
+            <div className="px-4 md:px-6 lg:px-8 -mt-6 relative z-10">
+                <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
+                    <div className="flex items-start justify-between mb-4">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+                            <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                                {product.category}
+                            </span>
                         </div>
-                    ) : prices.length === 0 ? (
-                        <div className="text-center py-8 bg-white rounded-2xl border border-dashed border-gray-300">
-                            <p className="text-gray-500">No prices found for this product yet.</p>
-                            <button
-                                onClick={() => navigate('/add-price')}
-                                className="mt-4 text-primary-600 font-semibold hover:text-primary-700"
-                            >
-                                Be the first to add a price
-                            </button>
+                    </div>
+                </div>
+
+                {/* Price History Graph */}
+                {priceHistory.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100 mt-6">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Price History</h2>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={priceHistory}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis
+                                    dataKey="date"
+                                    tick={{ fontSize: 12 }}
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={80}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 12 }}
+                                    label={{ value: 'Price (KES)', angle: -90, position: 'insideLeft' }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'white',
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '8px'
+                                    }}
+                                />
+                                <Legend />
+                                <Line
+                                    type="monotone"
+                                    dataKey="price"
+                                    stroke="#2563eb"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#2563eb', r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                    name="Price (KES)"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+
+                {/* Current Prices */}
+                <div className="mt-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Current Prices</h2>
+                    {pricesLoading ? (
+                        <div className="flex justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        </div>
+                    ) : prices.length > 0 ? (
+                        <div className="space-y-3">
+                            {sortedPrices.map((price, index) => (
+                                <PriceCard
+                                    key={price.id}
+                                    price={price}
+                                    isCheapest={index === 0}
+                                />
+                            ))}
                         </div>
                     ) : (
-                        prices.map((price) => (
-                            <div key={price.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gray-100`}>
-                                        <Store className="h-6 w-6 text-gray-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-gray-900 capitalize">{price.supermarketId}</h3>
-                                        <div className="flex items-center text-xs text-gray-500 mt-1">
-                                            <MapPin className="h-3 w-3 mr-1" />
-                                            {price.location}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-lg text-gray-900">KES {price.price}</p>
-                                    <p className="text-xs text-gray-400">
-                                        {new Date(price.timestamp?.toDate()).toLocaleDateString()}
-                                    </p>
-                                </div>
-                            </div>
-                        ))
+                        <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
+                            <p className="text-gray-500">No prices available for this product yet.</p>
+                        </div>
                     )}
                 </div>
             </div>
         </div>
-    );
-}
-
-// Helper component for store icon (if needed)
-function Store({ className }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-            <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-            <path d="M2 7h20" />
-            <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7" />
-        </svg>
     );
 }
