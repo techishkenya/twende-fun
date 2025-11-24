@@ -25,7 +25,6 @@ export async function initializeFirestore() {
 
         // 2. Add Products in batches (Firestore has a 500 write limit per batch)
         console.log('Adding products...');
-        const productsRef = collection(db, 'products');
         const batchSize = 500;
 
         for (let i = 0; i < FMCG_PRODUCTS.length; i += batchSize) {
@@ -33,19 +32,20 @@ export async function initializeFirestore() {
             const batchProducts = FMCG_PRODUCTS.slice(i, i + batchSize);
 
             for (const product of batchProducts) {
-                const productRef = doc(productsRef);
+                // Use setDoc with custom ID instead of addDoc to preserve product IDs
+                const productRef = doc(db, 'products', product.id);
                 batch.set(productRef, {
                     ...product,
+                    active: true,
                     createdAt: new Date(),
-                    updatedAt: new Date(),
-                    active: true
+                    updatedAt: new Date()
                 });
             }
 
             await batch.commit();
-            console.log(`✓ Added products ${i + 1} to ${Math.min(i + batchSize, FMCG_PRODUCTS.length)}`);
+            console.log(`✓ Added batch ${Math.floor(i / batchSize) + 1} (${batchProducts.length} products)`);
         }
-        console.log(`✓ Added ${FMCG_PRODUCTS.length} products`);
+        console.log(`✓ Added ${FMCG_PRODUCTS.length} products total`);
 
         // 3. Create sample prices for some products
         console.log('Adding sample prices...');
