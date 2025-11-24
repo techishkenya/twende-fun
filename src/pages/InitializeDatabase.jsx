@@ -5,9 +5,7 @@ import { setDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
 export default function InitializeDatabase() {
-    const [status, setStatus] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
     const navigate = useNavigate();
 
     console.log('InitializeDatabase component rendering');
@@ -15,9 +13,7 @@ export default function InitializeDatabase() {
     // Check auth state on mount
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
-            if (user) {
-                setStatus(`Logged in as: ${user.email}`);
-            }
+            setCurrentUser(user);
         });
         return () => unsubscribe();
     }, []);
@@ -117,18 +113,33 @@ export default function InitializeDatabase() {
 
                 {!loading && !status && (
                     <div className="space-y-6">
+                        {currentUser && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                                <p className="text-green-800 font-medium">Logged in as: {currentUser.email}</p>
+                            </div>
+                        )}
+
                         {/* Admin Account Section */}
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <h3 className="font-semibold text-blue-800 mb-2">1. Create Admin Account</h3>
                             <p className="text-sm text-blue-700 mb-3">
                                 Create the main admin user (admin@twende.fun / Pass1234)
                             </p>
-                            <button
-                                onClick={handleCreateAdmin}
-                                className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                            >
-                                Create Admin User
-                            </button>
+                            {currentUser ? (
+                                <button
+                                    disabled
+                                    className="w-full bg-blue-200 text-blue-800 py-2 rounded-lg font-medium cursor-not-allowed"
+                                >
+                                    ✅ Account Verified
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleCreateAdmin}
+                                    className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                >
+                                    Create Admin User
+                                </button>
+                            )}
                         </div>
 
                         {/* Database Init Section */}
