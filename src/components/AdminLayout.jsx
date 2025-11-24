@@ -119,7 +119,16 @@ export default function AdminLayout() {
                     </nav>
 
                     {/* User Info & Logout */}
-                    <div className="p-4 border-t">
+                    <div className="p-4 border-t space-y-2">
+                        <Link
+                            to="/"
+                            className="flex items-center gap-3 w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span>View Public Site</span>
+                        </Link>
                         <button
                             onClick={handleLogout}
                             className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -144,12 +153,9 @@ export default function AdminLayout() {
                         </button>
 
                         <div className="flex items-center gap-4">
-                            <Link
-                                to="/"
-                                className="text-sm text-gray-600 hover:text-gray-900"
-                            >
-                                ← View Public Site
-                            </Link>
+                            <span className="text-sm text-gray-600">
+                                {currentUser?.email || 'Admin'}
+                            </span>
                         </div>
                     </div>
                 </header>

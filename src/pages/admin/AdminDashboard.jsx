@@ -113,13 +113,6 @@ export default function AdminDashboard() {
             onClick: () => navigate('/admin/products')
         },
         {
-            label: 'Price Entries',
-            value: stats.prices,
-            icon: DollarSign,
-            color: 'green',
-            onClick: () => navigate('/admin/products')
-        },
-        {
             label: 'Supermarkets',
             value: stats.supermarkets,
             icon: Store,
