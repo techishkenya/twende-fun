@@ -1,9 +1,10 @@
+
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { auth, db } from '../../lib/firebase';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Loader } from 'lucide-react';
 
 export default function AdminLogin() {
     const [email, setEmail] = useState('');

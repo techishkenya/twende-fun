@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Share2, Bell } from 'lucide-react';
-import PriceCard from '../components/PriceCard';
 import { ArrowLeft, MapPin, TrendingUp, TrendingDown, Minus, Share2, AlertCircle } from 'lucide-react';
+import PriceCard from '../components/PriceCard';
 import { useProduct, usePrices } from '../hooks/useFirestore';
 
 export default function ProductDetail() {
