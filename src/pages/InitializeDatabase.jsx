@@ -75,9 +75,11 @@ export default function InitializeDatabase() {
 
             if (result.success) {
                 setStatus('✅ Database initialized successfully!');
+                // Set admin flag explicitly
+                localStorage.setItem('isAdmin', 'true');
                 setTimeout(() => {
                     navigate('/admin/dashboard');
-                }, 3000);
+                }, 1500);
             } else {
                 setError(result.error || 'Unknown error occurred');
             }
@@ -157,7 +159,7 @@ export default function InitializeDatabase() {
                     <div className="text-center">
                         <div className="text-6xl mb-4">✅</div>
                         <p className="text-green-600 font-semibold">{status}</p>
-                        <p className="text-sm text-gray-500 mt-2">Redirecting to home...</p>
+                        <p className="text-sm text-gray-500 mt-2">Redirecting to Admin Dashboard...</p>
                     </div>
                 )}
 
