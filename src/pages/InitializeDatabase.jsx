@@ -83,7 +83,12 @@ export default function InitializeDatabase() {
             }
         } catch (err) {
             console.error('Initialization error:', err);
-            setError(err.message);
+            if (err.message.includes('Failed to fetch dynamically imported module') || err.message.includes('Importing a module script failed')) {
+                setError('App updated. Please refresh the page and try again.');
+                setTimeout(() => window.location.reload(), 3000);
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
