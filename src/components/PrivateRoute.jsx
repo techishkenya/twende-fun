@@ -15,7 +15,7 @@ export default function PrivateRoute({ children }) {
                 try {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists() && userDoc.data().role === 'admin') {
-
+                        setIsAdmin(true);
                     } else {
                         setIsAdmin(false);
 
