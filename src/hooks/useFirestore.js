@@ -63,39 +63,84 @@ export function useProduct(id) {
 }
 
 /**
- * Hook to fetch prices for a product
+ * Hook to fetch unified prices for a product (all 4 supermarkets)
  */
 export function usePrices(productId) {
-    const [prices, setPrices] = useState([]);
+    const [prices, setPrices] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (!productId) return;
+        if (!productId) {
+            setLoading(false);
+            return;
+        }
 
-        const q = query(
-            collection(db, 'prices'),
-            where('productId', '==', productId),
-            orderBy('price', 'asc')
+        const priceDocRef = doc(db, 'prices', productId);
+
+        const unsubscribe = onSnapshot(
+            priceDocRef,
+            (docSnap) => {
+                if (docSnap.exists()) {
+                    setPrices(docSnap.data().prices);
+                } else {
+                    setPrices(null);
+                }
+                setLoading(false);
+            },
+            (err) => {
+                console.error('Error fetching prices:', err);
+                setError(err);
+                setLoading(false);
+            }
         );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const pricesList = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setPrices(pricesList);
-            setLoading(false);
-        }, (err) => {
-            console.error('Error fetching prices:', err);
-            setError(err);
-            setLoading(false);
-        });
 
         return () => unsubscribe();
     }, [productId]);
 
     return { prices, loading, error };
+}
+
+/**
+ * Utility: Get cheapest price from unified prices
+ */
+export function getCheapestPrice(prices) {
+    if (!prices) return null;
+
+    const entries = Object.entries(prices);
+    if (entries.length === 0) return null;
+
+    return entries.reduce((min, [supermarket, data]) => {
+        const price = data.price || data;
+        const minPrice = min.price || min;
+        return price < minPrice ? { supermarket, price, ...data } : min;
+    }, entries[0][1]);
+}
+
+/**
+ * Utility: Get supermarket brand color
+ */
+export function getSupermarketColor(supermarketId) {
+    const colors = {
+        carrefour: 'blue-600',
+        naivas: 'green-600',
+        quickmart: 'red-600',
+        magunas: 'yellow-600'
+    };
+    return colors[supermarketId] || 'gray-600';
+}
+
+/**
+ * Utility: Format prices array for chart
+ */
+export function formatPricesForChart(prices) {
+    if (!prices) return [];
+
+    return Object.entries(prices).map(([supermarket, data]) => ({
+        supermarket: supermarket.charAt(0).toUpperCase() + supermarket.slice(1),
+        price: data.price || data,
+        color: getSupermarketColor(supermarket)
+    }));
 }
 
 /**

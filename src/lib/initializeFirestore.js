@@ -24,44 +24,80 @@ export async function initializeFirestore() {
         }
         console.log(`✓ Added ${SUPERMARKETS.length} supermarkets`);
 
-        // 2. Add Products in batches (Firestore has a 500 write limit per batch)
+        // 2. Add Products
         console.log('Adding products...');
-        const batchSize = 500;
-
-        for (let i = 0; i < FMCG_PRODUCTS.length; i += batchSize) {
-            const batch = writeBatch(db);
-            const batchProducts = FMCG_PRODUCTS.slice(i, i + batchSize);
-
-            for (const product of batchProducts) {
-                // Use setDoc with custom ID instead of addDoc to preserve product IDs
-                const productRef = doc(db, 'products', product.id);
-                batch.set(productRef, {
-                    ...product,
-                    active: true,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                });
-            }
-
-            await batch.commit();
-            console.log(`✓ Added batch ${Math.floor(i / batchSize) + 1} (${batchProducts.length} products)`);
-        }
-        console.log(`✓ Added ${FMCG_PRODUCTS.length} products total`);
-
-        // 3. Create sample prices for some products
-        console.log('Adding sample prices...');
-        const pricesRef = collection(db, 'prices');
-        const samplePrices = generateSamplePrices(50); // Generate 50 sample prices
-
-        for (const price of samplePrices) {
-            await addDoc(pricesRef, {
-                ...price,
+        for (const product of FMCG_PRODUCTS) {
+            const productRef = doc(db, 'products', product.id);
+            await setDoc(productRef, {
+                ...product,
+                active: true,
                 createdAt: new Date(),
-                verified: true,
-                confidenceScore: Math.floor(Math.random() * 20) + 80
+                updatedAt: new Date()
             });
         }
-        console.log(`✓ Added ${samplePrices.length} sample prices`);
+        console.log(`✓ Added ${FMCG_PRODUCTS.length} products`);
+
+        // 3. Add Unified Prices (all 4 supermarkets per product)
+        console.log('Adding unified prices for all products...');
+
+        // Helper function to generate random price variations
+        const generatePriceVariations = (basePrice) => {
+            const variation = 0.15; // ±15% variation
+            return {
+                carrefour: Math.round(basePrice * (1 + (Math.random() * variation * 2 - variation))),
+                naivas: Math.round(basePrice * (1 + (Math.random() * variation * 2 - variation))),
+                quickmart: Math.round(basePrice * (1 + (Math.random() * variation * 2 - variation))),
+                magunas: Math.round(basePrice * (1 + (Math.random() * variation * 2 - variation)))
+            };
+        };
+
+        for (const product of FMCG_PRODUCTS) {
+            // Generate base price based on category
+            const basePrices = {
+                'Dairy': 150,
+                'Beverages': 120,
+                'Snacks': 80,
+                'Household': 200,
+                'Personal Care': 180,
+                'Pantry': 160,
+                'Fresh Produce': 100,
+                'Baby Products': 250
+            };
+
+            const basePrice = basePrices[product.category] || 150;
+            const prices = generatePriceVariations(basePrice);
+
+            // Create unified price document with product ID as document ID
+            const priceRef = doc(db, 'prices', product.id);
+            await setDoc(priceRef, {
+                productId: product.id,
+                prices: {
+                    carrefour: {
+                        price: prices.carrefour,
+                        location: 'Two Rivers',
+                        updatedAt: new Date()
+                    },
+                    naivas: {
+                        price: prices.naivas,
+                        location: 'Junction',
+                        updatedAt: new Date()
+                    },
+                    quickmart: {
+                        price: prices.quickmart,
+                        location: 'Westlands',
+                        updatedAt: new Date()
+                    },
+                    magunas: {
+                        price: prices.magunas,
+                        location: 'Ngong Road',
+                        updatedAt: new Date()
+                    }
+                },
+                lastUpdated: new Date(),
+                verified: true
+            });
+        }
+        console.log(`✓ Added unified prices for ${FMCG_PRODUCTS.length} products`);
 
         console.log('✅ Firestore initialization complete!');
         return { success: true, message: 'Database initialized successfully' };
