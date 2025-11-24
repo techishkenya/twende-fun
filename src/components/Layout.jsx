@@ -28,12 +28,6 @@ export default function Layout() {
                         <Link to="/help" className="hover:text-gray-600 transition-colors">Privacy</Link>
                         <span>•</span>
                         <Link to="/help" className="hover:text-gray-600 transition-colors">Terms</Link>
-                        <span>•</span>
-                        {currentUser && localStorage.getItem('isAdmin') === 'true' ? (
-                            <Link to="/admin/dashboard" className="hover:text-primary-600 transition-colors font-medium">Dashboard</Link>
-                        ) : (
-                            <Link to="/admin/login" className="hover:text-primary-600 transition-colors font-medium">Admin</Link>
-                        )}
                     </div>
                 </div>
             </main>
