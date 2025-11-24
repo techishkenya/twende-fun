@@ -18,7 +18,6 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProductsManagement from './pages/admin/ProductsManagement';
-import TrendingManagement from './pages/admin/TrendingManagement';
 import SupermarketsManagement from './pages/admin/SupermarketsManagement';
 import SubmissionsManagement from './pages/admin/SubmissionsManagement';
 import UsersManagement from './pages/admin/UsersManagement';
@@ -59,7 +58,6 @@ function App() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="products" element={<ProductsManagement />} />
-            <Route path="trending" element={<TrendingManagement />} />
             <Route path="supermarkets" element={<SupermarketsManagement />} />
             <Route path="submissions" element={<SubmissionsManagement />} />
             <Route path="users" element={<UsersManagement />} />

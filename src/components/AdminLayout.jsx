@@ -73,7 +73,6 @@ export default function AdminLayout() {
     const navItems = [
         { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/admin/products', label: 'Products & Pricing', icon: Package },
-        { path: '/admin/trending', label: 'Trending', icon: TrendingUp },
         { path: '/admin/supermarkets', label: 'Supermarkets', icon: Store },
         { path: '/admin/submissions', label: 'Submissions', icon: UserCheck },
         { path: '/admin/users', label: 'Users', icon: Users },

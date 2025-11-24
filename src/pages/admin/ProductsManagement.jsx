@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package, Star, Eye, ArrowUpDown } from 'lucide-react';
 import { CATEGORIES as DEFAULT_CATEGORIES } from '../../lib/types';
 import { getCheapestPrice, getSupermarketColor, useSupermarkets } from '../../hooks/useFirestore';
 
@@ -16,6 +16,7 @@ export default function ProductsManagement() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [sortBy, setSortBy] = useState('popular'); // popular, newest, oldest
     const [editingProduct, setEditingProduct] = useState(null);
     const [editingPrices, setEditingPrices] = useState({});
     const [showAddCategory, setShowAddCategory] = useState(false);
@@ -96,13 +97,36 @@ export default function ProductsManagement() {
         return products.filter(p => p.category === categoryName).length;
     };
 
-    const filteredProducts = selectedCategory
+    // Filter products by category and search
+    let baseFiltered = selectedCategory
         ? products.filter(product =>
             product.category === selectedCategory &&
             (product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 product.category?.toLowerCase().includes(searchTerm.toLowerCase()))
         )
         : [];
+
+    // Sort products based on sortBy
+    const sortedProducts = [...baseFiltered].sort((a, b) => {
+        switch (sortBy) {
+            case 'popular':
+                return (b.viewCount || 0) - (a.viewCount || 0);
+            case 'newest':
+                return (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
+            case 'oldest':
+                return (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0);
+            default:
+                return 0;
+        }
+    });
+
+    // Get top 10 by views for auto-trending badge
+    const top10ByViews = [...baseFiltered]
+        .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+        .slice(0, 10)
+        .map(p => p.id);
+
+    const filteredProducts = sortedProducts;
 
     const handleAddCategory = async (categoryName) => {
         try {
@@ -209,15 +233,29 @@ export default function ProductsManagement() {
 
     const handleUpdatePrices = async (productId, newPrices) => {
         try {
-            await updateDoc(doc(db, 'prices', productId), {
-                prices: newPrices,
-                lastUpdated: new Date()
-            });
+            const priceRef = doc(db, 'prices', productId);
+            await updateDoc(priceRef, { prices: newPrices });
             setPrices({ ...prices, [productId]: newPrices });
-            setEditingPrices({});
+            const newEditingPrices = { ...editingPrices };
+            delete newEditingPrices[productId];
+            setEditingPrices(newEditingPrices);
         } catch (error) {
             console.error('Error updating prices:', error);
             alert('Failed to update prices');
+        }
+    };
+
+    const toggleTrending = async (productId, currentStatus) => {
+        try {
+            await updateDoc(doc(db, 'products', productId), {
+                isTrending: !currentStatus
+            });
+            setProducts(products.map(p =>
+                p.id === productId ? { ...p, isTrending: !currentStatus } : p
+            ));
+        } catch (error) {
+            console.error('Error updating trending status:', error);
+            alert('Failed to update trending status');
         }
     };
 
@@ -348,17 +386,50 @@ export default function ProductsManagement() {
             ) : (
                 // Products List
                 <div className="space-y-6">
-                    {/* Search */}
+                    {/* Search & Sort */}
                     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search products..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            />
+                        <div className="flex flex-col md:flex-row gap-3">
+                            {/* Search */}
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                />
+                            </div>
+
+                            {/* Sort Dropdown */}
+                            <div className="relative min-w-[180px]">
+                                <ArrowUpDown className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none bg-white"
+                                >
+                                    <option value="popular">Popular (Most Views)</option>
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                                <Package className="h-4 w-4" />
+                                {filteredProducts.length} products
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <Star className="h-4 w-4 text-yellow-500" />
+                                {filteredProducts.filter(p => p.isTrending).length} manually trending
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <TrendingUp className="h-4 w-4 text-green-500" />
+                                {top10ByViews.length} auto-trending (top 10)
+                            </span>
                         </div>
                     </div>
 
@@ -368,23 +439,46 @@ export default function ProductsManagement() {
                             const productPrices = prices[product.id] || {};
                             const cheapest = getCheapestPrice(productPrices);
                             const isEditingPrices = editingPrices[product.id];
+                            const isAutoTrending = top10ByViews.includes(product.id);
+                            const isManualTrending = product.isTrending;
 
                             return (
                                 <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                                     {/* Product Header */}
                                     <div className="p-6 border-b border-gray-100">
                                         <div className="flex items-start justify-between">
-                                            <div className="flex items-start gap-4">
+                                            <div className="flex items-start gap-4 flex-1">
                                                 <img
                                                     src={product.image}
                                                     alt={product.name}
                                                     className="h-16 w-16 object-contain rounded-lg border border-gray-200"
                                                 />
-                                                <div>
-                                                    <h3 className="text-lg font-bold text-gray-900">{product.name}</h3>
-                                                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mt-1">
-                                                        {product.category}
-                                                    </span>
+                                                <div className="flex-1">
+                                                    <div className="flex items-start gap-2">
+                                                        <h3 className="text-lg font-bold text-gray-900">{product.name}</h3>
+                                                        {/* Trending Badges */}
+                                                        {isManualTrending && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                                                                <Star className="h-3 w-3 fill-current" />
+                                                                TRENDING
+                                                            </span>
+                                                        )}
+                                                        {isAutoTrending && !isManualTrending && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                                                                <TrendingUp className="h-3 w-3" />
+                                                                Auto Top 10
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                                            {product.category}
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                                                            <Eye className="h-3 w-3" />
+                                                            {product.viewCount || 0} views
+                                                        </span>
+                                                    </div>
                                                     {cheapest && (
                                                         <p className="text-sm text-gray-600 mt-2 flex items-center gap-1">
                                                             <TrendingUp className="h-4 w-4 text-green-600" />
@@ -394,6 +488,17 @@ export default function ProductsManagement() {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
+                                                {/* Trending Toggle */}
+                                                <button
+                                                    onClick={() => toggleTrending(product.id, product.isTrending)}
+                                                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${isManualTrending
+                                                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                    title={isManualTrending ? "Remove from trending" : "Mark as trending"}
+                                                >
+                                                    <Star className={`h-4 w-4 ${isManualTrending ? 'fill-current' : ''}`} />
+                                                </button>
                                                 <button
                                                     onClick={() => setEditingProduct(product)}
                                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
