@@ -12,6 +12,16 @@ export default function InitializeDatabase() {
 
     console.log('InitializeDatabase component rendering');
 
+    // Check auth state on mount
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                setStatus(`Logged in as: ${user.email}`);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
     const handleCreateAdmin = async () => {
         setLoading(true);
         setError(null);
