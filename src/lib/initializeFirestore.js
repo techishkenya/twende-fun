@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, addDoc, writeBatch, doc } from 'firebase/firestore';
+import { collection, addDoc, writeBatch, doc, setDoc } from 'firebase/firestore';
 import { FMCG_PRODUCTS } from './products';
 import { SUPERMARKETS } from './types';
 
