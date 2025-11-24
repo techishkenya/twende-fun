@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Package, DollarSign, Store, Users, TrendingUp, Clock } from 'lucide-react';
+import { Package, DollarSign, Store, Users, TrendingUp, Clock, Plus, Edit, FileCheck } from 'lucide-react';
 
 export default function AdminDashboard() {
+    const navigate = useNavigate();
     const [stats, setStats] = useState({
         products: 0,
         prices: 0,
@@ -17,6 +19,7 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         fetchStats();
+        fetchRecentActivity();
     }, []);
 
     const fetchStats = async () => {
@@ -59,13 +62,91 @@ export default function AdminDashboard() {
         }
     };
 
+    const fetchRecentActivity = async () => {
+        try {
+            // Fetch recently updated products (as a proxy for admin activity)
+            const productsQuery = query(
+                collection(db, 'products'),
+                orderBy('updatedAt', 'desc'),
+                limit(10)
+            );
+            const productsSnap = await getDocs(productsQuery);
+
+            const activities = productsSnap.docs.map(doc => {
+                const data = doc.data();
+                const updatedAt = data.updatedAt?.toDate() || new Date();
+                const timeAgo = getTimeAgo(updatedAt);
+
+                return {
+                    action: `Updated product "${data.name}"`,
+                    time: timeAgo,
+                    timestamp: updatedAt
+                };
+            });
+
+            setRecentActivity(activities);
+        } catch (error) {
+            console.error('Error fetching activity:', error);
+            // Fallback to mock data if no updatedAt field exists
+            setRecentActivity([
+                { action: 'System initialized', time: 'Just now', timestamp: new Date() }
+            ]);
+        }
+    };
+
+    const getTimeAgo = (date) => {
+        const seconds = Math.floor((new Date() - date) / 1000);
+
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+        return date.toLocaleDateString();
+    };
+
     const statCards = [
-        { label: 'Total Products', value: stats.products, icon: Package, color: 'blue' },
-        { label: 'Price Entries', value: stats.prices, icon: DollarSign, color: 'green' },
-        { label: 'Supermarkets', value: stats.supermarkets, icon: Store, color: 'orange' },
-        { label: 'Users', value: stats.users, icon: Users, color: 'purple' },
-        { label: 'Pending Reviews', value: stats.pendingSubmissions, icon: Clock, color: 'yellow' },
-        { label: 'Today\'s Submissions', value: stats.todaySubmissions, icon: TrendingUp, color: 'red' },
+        {
+            label: 'Total Products',
+            value: stats.products,
+            icon: Package,
+            color: 'blue',
+            onClick: () => navigate('/admin/products')
+        },
+        {
+            label: 'Price Entries',
+            value: stats.prices,
+            icon: DollarSign,
+            color: 'green',
+            onClick: () => navigate('/admin/products')
+        },
+        {
+            label: 'Supermarkets',
+            value: stats.supermarkets,
+            icon: Store,
+            color: 'orange',
+            onClick: () => navigate('/admin/supermarkets')
+        },
+        {
+            label: 'Users',
+            value: stats.users,
+            icon: Users,
+            color: 'purple',
+            onClick: () => navigate('/admin/users')
+        },
+        {
+            label: 'Pending Reviews',
+            value: stats.pendingSubmissions,
+            icon: Clock,
+            color: 'yellow',
+            onClick: () => navigate('/admin/submissions')
+        },
+        {
+            label: 'Today\'s Submissions',
+            value: stats.todaySubmissions,
+            icon: TrendingUp,
+            color: 'red',
+            onClick: () => navigate('/admin/submissions')
+        },
     ];
 
     if (loading) {
@@ -88,9 +169,10 @@ export default function AdminDashboard() {
                 {statCards.map((stat) => {
                     const Icon = stat.icon;
                     return (
-                        <div
+                        <button
                             key={stat.label}
-                            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                            onClick={stat.onClick}
+                            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:scale-105 text-left"
                         >
                             <div className="flex items-start justify-between">
                                 <div>
@@ -101,7 +183,7 @@ export default function AdminDashboard() {
                                     <Icon className={`h-6 w-6 text-${stat.color}-600`} />
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     );
                 })}
             </div>
@@ -110,13 +192,25 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button className="p-4 border-2 border-primary-600 text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-semibold">
+                    <button
+                        onClick={() => navigate('/admin/products')}
+                        className="p-4 border-2 border-primary-600 text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-semibold flex items-center justify-center gap-2"
+                    >
+                        <Plus className="h-5 w-5" />
                         Add New Product
                     </button>
-                    <button className="p-4 border-2 border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition-colors font-semibold">
+                    <button
+                        onClick={() => navigate('/admin/products')}
+                        className="p-4 border-2 border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition-colors font-semibold flex items-center justify-center gap-2"
+                    >
+                        <Edit className="h-5 w-5" />
                         Update Prices
                     </button>
-                    <button className="p-4 border-2 border-orange-600 text-orange-600 rounded-xl hover:bg-orange-50 transition-colors font-semibold">
+                    <button
+                        onClick={() => navigate('/admin/submissions')}
+                        className="p-4 border-2 border-orange-600 text-orange-600 rounded-xl hover:bg-orange-50 transition-colors font-semibold flex items-center justify-center gap-2"
+                    >
+                        <FileCheck className="h-5 w-5" />
                         Review Submissions
                     </button>
                 </div>
@@ -130,9 +224,10 @@ export default function AdminDashboard() {
                 ) : (
                     <div className="space-y-3">
                         {recentActivity.map((activity, index) => (
-                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-gray-900">{activity.action}</p>
+                                    <p className="text-sm text-gray-900 font-medium">{activity.action}</p>
                                     <p className="text-xs text-gray-500">{activity.time}</p>
                                 </div>
                             </div>
