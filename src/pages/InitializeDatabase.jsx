@@ -76,7 +76,7 @@ export default function InitializeDatabase() {
             if (result.success) {
                 setStatus('✅ Database initialized successfully!');
                 setTimeout(() => {
-                    navigate('/');
+                    navigate('/admin/dashboard');
                 }, 3000);
             } else {
                 setError(result.error || 'Unknown error occurred');
@@ -138,10 +138,10 @@ export default function InitializeDatabase() {
                         </div>
 
                         <button
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate('/admin/dashboard')}
                             className="w-full bg-gray-200 text-gray-700 py-3 rounded-full font-semibold hover:bg-gray-300 transition-colors"
                         >
-                            Go to Home
+                            Go to Admin Dashboard
                         </button>
                     </div>
                 )}

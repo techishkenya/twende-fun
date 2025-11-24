@@ -1,9 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, PlusCircle, User, Search } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
 export default function Layout() {
     const location = useLocation();
+    const { currentUser } = useAuth();
 
     const navItems = [
         { icon: Home, label: 'Home', path: '/' },
@@ -27,7 +29,11 @@ export default function Layout() {
                         <span>•</span>
                         <Link to="/help" className="hover:text-gray-600 transition-colors">Terms</Link>
                         <span>•</span>
-                        <Link to="/admin/login" className="hover:text-primary-600 transition-colors font-medium">Admin</Link>
+                        {currentUser && localStorage.getItem('isAdmin') === 'true' ? (
+                            <Link to="/admin/dashboard" className="hover:text-primary-600 transition-colors font-medium">Dashboard</Link>
+                        ) : (
+                            <Link to="/admin/login" className="hover:text-primary-600 transition-colors font-medium">Admin</Link>
+                        )}
                     </div>
                 </div>
             </main>
