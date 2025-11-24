@@ -4,7 +4,6 @@ import { signOut } from 'firebase/auth';
 import {
     LayoutDashboard,
     Package,
-    DollarSign,
     Store,
     UserCheck,
     Users,
@@ -31,8 +30,7 @@ export default function AdminLayout() {
 
     const navItems = [
         { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/admin/products', label: 'Products', icon: Package },
-        { path: '/admin/prices', label: 'Prices', icon: DollarSign },
+        { path: '/admin/products', label: 'Products & Pricing', icon: Package },
         { path: '/admin/supermarkets', label: 'Supermarkets', icon: Store },
         { path: '/admin/submissions', label: 'Submissions', icon: UserCheck },
         { path: '/admin/users', label: 'Users', icon: Users },
