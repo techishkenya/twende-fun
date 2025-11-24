@@ -13,7 +13,7 @@ import Submissions from './pages/Submissions';
 import Achievements from './pages/Achievements';
 import HelpSupport from './pages/HelpSupport';
 import SupermarketTrending from './pages/SupermarketTrending';
-import SupermarketTrending from './pages/SupermarketTrending';
+
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
