@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
@@ -36,7 +36,15 @@ export default function InitializeDatabase() {
         } catch (err) {
             console.error('Error creating admin:', err);
             if (err.code === 'auth/email-already-in-use') {
-                setError('Admin account already exists. You can proceed to initialize data.');
+                try {
+                    // Try to sign in if account exists
+                    setStatus('Account exists. Logging in...');
+                    await signInWithEmailAndPassword(auth, 'admin@twende.fun', 'Pass1234');
+                    setStatus('✅ Logged in as Admin successfully!');
+                    setTimeout(() => setStatus(''), 3000);
+                } catch (loginErr) {
+                    setError('Admin account exists but login failed: ' + loginErr.message);
+                }
             } else {
                 setError(err.message);
             }
