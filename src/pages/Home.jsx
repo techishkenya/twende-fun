@@ -11,8 +11,8 @@ export default function Home() {
             <header className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white p-6 pb-12 rounded-b-[2.5rem] shadow-lg">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-2xl font-display font-bold tracking-tight">TRACKER KE</h1>
-                        <p className="text-blue-100 text-sm">Compare prices, save money.</p>
+                        <h1 className="text-2xl font-display font-bold tracking-tight">TRACKER KE v1.0</h1>
+                        <p className="text-blue-100 text-sm">Compare prices, save money. 🚀</p>
                     </div>
                     <div className="h-10 w-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-lg font-bold">
                         T
