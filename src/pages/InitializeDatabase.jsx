@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { initializeFirestore } from '../lib/initializeFirestore';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc } from 'firebase/firestore';
@@ -10,6 +9,8 @@ export default function InitializeDatabase() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    console.log('InitializeDatabase component rendering');
 
     const handleCreateAdmin = async () => {
         setLoading(true);
@@ -50,6 +51,8 @@ export default function InitializeDatabase() {
         setStatus('Starting database initialization...');
 
         try {
+            // Dynamic import to prevent load-time crashes
+            const { initializeFirestore } = await import('../lib/initializeFirestore');
             const result = await initializeFirestore();
 
             if (result.success) {
@@ -61,6 +64,7 @@ export default function InitializeDatabase() {
                 setError(result.error || 'Unknown error occurred');
             }
         } catch (err) {
+            console.error('Initialization error:', err);
             setError(err.message);
         } finally {
             setLoading(false);
