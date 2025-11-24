@@ -1,16 +1,18 @@
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, AlertCircle, Loader } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Loader, Database } from 'lucide-react';
 
 export default function AdminLogin() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+    const [initMode, setInitMode] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -49,6 +51,59 @@ export default function AdminLogin() {
         }
     };
 
+    const handleInitialize = async () => {
+        setLoading(true);
+        setError('');
+        setSuccess('Initializing system...');
+
+        try {
+            // 1. Create/Repair Admin Account
+            let user;
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, 'admin@twende.fun', 'Pass1234');
+                user = userCredential.user;
+                setSuccess('Admin account created...');
+            } catch (err) {
+                if (err.code === 'auth/email-already-in-use') {
+                    setSuccess('Admin account exists. Verifying...');
+                    const userCredential = await signInWithEmailAndPassword(auth, 'admin@twende.fun', 'Pass1234');
+                    user = userCredential.user;
+                } else {
+                    throw err;
+                }
+            }
+
+            // 2. Force Admin Role
+            await setDoc(doc(db, 'users', user.uid), {
+                email: 'admin@twende.fun',
+                role: 'admin',
+                displayName: 'System Admin',
+                createdAt: new Date(),
+                badges: ['admin']
+            }, { merge: true });
+            setSuccess('Admin privileges verified...');
+
+            // 3. Initialize Database Data
+            const { initializeFirestore } = await import('../../lib/initializeFirestore');
+            const result = await initializeFirestore();
+
+            if (result.success) {
+                setSuccess('✅ System initialized! Redirecting...');
+                localStorage.setItem('isAdmin', 'true');
+                setTimeout(() => navigate('/admin/dashboard'), 1500);
+            } else {
+                throw new Error(result.error || 'Database initialization failed');
+            }
+
+        } catch (err) {
+            console.error('Init error:', err);
+            setError('Initialization failed: ' + err.message);
+            setSuccess('');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-primary-600 to-secondary-600 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
@@ -64,6 +119,11 @@ export default function AdminLogin() {
                     {error && (
                         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
                             {error}
+                        </div>
+                    )}
+                    {success && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                            {success}
                         </div>
                     )}
 
@@ -114,13 +174,37 @@ export default function AdminLogin() {
                     </button>
                 </form>
 
-                <div className="mt-6 text-center">
+                <div className="mt-6 flex flex-col items-center gap-4">
                     <button
                         onClick={() => navigate('/')}
                         className="text-sm text-gray-600 hover:text-gray-900"
                     >
                         ← Back to App
                     </button>
+
+                    <div className="w-full border-t pt-4">
+                        <button
+                            onClick={() => setInitMode(!initMode)}
+                            className="text-xs text-gray-400 hover:text-primary-600 w-full text-center"
+                        >
+                            System Setup
+                        </button>
+
+                        {initMode && (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                <p className="text-xs text-gray-600 mb-3 text-center">
+                                    First time? Initialize the system with default admin and data.
+                                </p>
+                                <button
+                                    onClick={handleInitialize}
+                                    disabled={loading}
+                                    className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                                >
+                                    {loading ? 'Initializing...' : 'Initialize System'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

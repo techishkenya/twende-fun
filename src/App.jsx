@@ -13,7 +13,7 @@ import Submissions from './pages/Submissions';
 import Achievements from './pages/Achievements';
 import HelpSupport from './pages/HelpSupport';
 import SupermarketTrending from './pages/SupermarketTrending';
-import InitializeDatabase from './pages/InitializeDatabase';
+import SupermarketTrending from './pages/SupermarketTrending';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -43,7 +43,8 @@ function App() {
           <Route path="/login" element={<Login />} />
 
           {/* Admin Routes */}
-          <Route path="/init-db" element={<InitializeDatabase />} />
+          {/* Admin Routes */}
+          <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
           <Route path="/admin/login" element={<AdminLogin />} />
 
           <Route path="/admin" element={
