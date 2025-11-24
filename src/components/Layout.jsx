@@ -15,8 +15,8 @@ export default function Layout() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <main className="max-w-md mx-auto min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+            <main className="max-w-md mx-auto md:max-w-4xl lg:max-w-6xl xl:max-w-7xl min-h-screen bg-white md:shadow-xl overflow-hidden flex flex-col">
                 <div className="flex-1">
                     <Outlet />
                 </div>
@@ -32,7 +32,7 @@ export default function Layout() {
                 </div>
             </main>
 
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50">
+            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50 md:hidden">
                 <div className="max-w-md mx-auto flex justify-around items-center h-16 px-2">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path;

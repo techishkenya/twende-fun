@@ -27,9 +27,9 @@ export default function SearchPage() {
     });
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
             {/* Search Header */}
-            <div className="bg-white sticky top-0 z-30 px-4 py-4 shadow-sm">
+            <div className="bg-white sticky top-0 z-30 px-4 md:px-6 lg:px-8 py-4 md:py-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                     <button
                         onClick={() => navigate(-1)}
@@ -54,7 +54,7 @@ export default function SearchPage() {
                 </div>
 
                 {/* Categories Scroll */}
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex gap-2 overflow-x-auto md:flex-wrap pb-2 scrollbar-hide">
                     <button
                         onClick={() => setActiveCategory('All')}
                         className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === 'All'
@@ -80,13 +80,13 @@ export default function SearchPage() {
             </div>
 
             {/* Results */}
-            <div className="p-4">
+            <div className="p-4 md:p-6 lg:p-8">
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                     </div>
                 ) : filteredProducts.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                         {filteredProducts.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
