@@ -31,12 +31,19 @@ export default function AdminLogin() {
                 localStorage.setItem('isAdmin', 'true');
                 navigate('/admin/dashboard');
             } else {
-                setError('You do not have admin privileges');
+                console.error('Admin check failed: User document missing or role not admin');
+                setError('Access Denied: You do not have administrator privileges.');
                 await auth.signOut();
             }
         } catch (err) {
             console.error('Login error:', err);
-            setError('Invalid email or password');
+            if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+                setError('Invalid email or password.');
+            } else if (err.code === 'auth/too-many-requests') {
+                setError('Too many failed attempts. Please try again later.');
+            } else {
+                setError('Login failed: ' + err.message);
+            }
         } finally {
             setLoading(false);
         }

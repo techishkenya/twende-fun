@@ -49,8 +49,19 @@ export default function InitializeDatabase() {
                 try {
                     // Try to sign in if account exists
                     setStatus('Account exists. Logging in...');
-                    await signInWithEmailAndPassword(auth, 'admin@twende.fun', 'Pass1234');
-                    setStatus('✅ Logged in as Admin successfully!');
+                    const userCredential = await signInWithEmailAndPassword(auth, 'admin@twende.fun', 'Pass1234');
+                    const user = userCredential.user;
+
+                    // Force update/create admin doc to ensure role exists
+                    await setDoc(doc(db, 'users', user.uid), {
+                        email: 'admin@twende.fun',
+                        role: 'admin',
+                        displayName: 'System Admin',
+                        createdAt: new Date(),
+                        badges: ['admin']
+                    }, { merge: true });
+
+                    setStatus('✅ Logged in & Admin privileges verified!');
                     setTimeout(() => setStatus(''), 3000);
                 } catch (loginErr) {
                     setError('Admin account exists but login failed: ' + loginErr.message);
