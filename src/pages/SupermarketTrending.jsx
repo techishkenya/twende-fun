@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, MapPin, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Grid3x3 } from 'lucide-react';
 import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { SUPERMARKETS } from '../lib/types';
+import { getCheapestPrice } from '../hooks/useFirestore';
 
 export default function SupermarketTrending() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [showAllLocations, setShowAllLocations] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
     // Find the supermarket
     const supermarket = SUPERMARKETS.find(s => s.id === id);
@@ -29,72 +31,88 @@ export default function SupermarketTrending() {
         );
     }
 
-    const [trendingItems, setTrendingItems] = useState([]);
+    const [bestPriceProducts, setBestPriceProducts] = useState([]);
+    const [categoryStats, setCategoryStats] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchTrending = async () => {
+        const fetchBestPrices = async () => {
             try {
-                // Fetch products that are either manually trending OR have high views
-                // Note: Complex OR queries are limited in Firestore, so we'll fetch top viewed and filter client-side or do two queries
-
-                // For simplicity and robustness without complex indexes:
-                // Fetch all products, sort by a score (isTrending * 1000 + viewCount)
-                const snapshot = await getDocs(collection(db, 'products'));
-                const allProducts = snapshot.docs.map(doc => ({
+                // Fetch all active products
+                const productsSnapshot = await getDocs(collection(db, 'products'));
+                const allProducts = productsSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
 
-                // Calculate a "trending score"
-                const scoredProducts = allProducts.map(p => ({
-                    ...p,
-                    score: (p.isTrending ? 10000 : 0) + (p.viewCount || 0)
-                }));
+                // Fetch all prices
+                const pricesSnapshot = await getDocs(collection(db, 'prices'));
+                const allPrices = {};
+                pricesSnapshot.docs.forEach(doc => {
+                    allPrices[doc.id] = doc.data().prices;
+                });
 
-                // Sort by score desc
-                scoredProducts.sort((a, b) => b.score - a.score);
+                // Find products where this supermarket has the best price
+                const bestPriceItems = [];
 
-                // Take top 20
-                const topProducts = scoredProducts.slice(0, 20);
+                for (const product of allProducts) {
+                    if (!product.active) continue;
 
-                // Now fetch prices for these products to display current price
-                // This is N+1 but for 20 items it's acceptable for now, or we could store cached price in product
-                // Assuming we need to fetch prices:
-                const itemsWithPrices = await Promise.all(topProducts.map(async (p) => {
-                    // Fetch price for THIS supermarket
-                    // If we stored prices in a subcollection or separate collection 'prices'
-                    // We need to find the price document for this product
-                    try {
-                        const priceDoc = await getDoc(doc(db, 'prices', p.id));
-                        if (priceDoc.exists()) {
-                            const pricesData = priceDoc.data().prices;
-                            const myPrice = pricesData[id]?.price || 0;
-                            return {
-                                ...p,
-                                currentPrice: myPrice,
-                                trend: 'stable', // We'd need historical data for real trend, mocking for now
-                                priceChange: 0,
-                                priceChangePercent: 0
-                            };
-                        }
-                    } catch (e) {
-                        console.error(e);
+                    const prices = allPrices[product.id];
+                    if (!prices) continue;
+
+                    // Get this supermarket's price
+                    const myPrice = prices[id]?.price;
+                    if (!myPrice || myPrice <= 0) continue;
+
+                    // Find cheapest price across all supermarkets
+                    const cheapest = getCheapestPrice(prices);
+
+                    // Check if this supermarket has the best price
+                    if (cheapest && cheapest.supermarket === id) {
+                        bestPriceItems.push({
+                            ...product,
+                            currentPrice: myPrice,
+                            location: prices[id]?.location || '',
+                            score: (product.isTrending ? 10000 : 0) + (product.viewCount || 0)
+                        });
                     }
-                    return { ...p, currentPrice: 0, trend: 'stable', priceChange: 0, priceChangePercent: 0 };
-                }));
+                }
 
-                setTrendingItems(itemsWithPrices.filter(p => p.currentPrice > 0)); // Only show if it has a price here
+                // Sort by score
+                bestPriceItems.sort((a, b) => b.score - a.score);
+
+                // Calculate category stats
+                const categoryMap = {};
+                bestPriceItems.forEach(item => {
+                    if (!categoryMap[item.category]) {
+                        categoryMap[item.category] = 0;
+                    }
+                    categoryMap[item.category]++;
+                });
+
+                const stats = Object.entries(categoryMap)
+                    .map(([category, count]) => ({ category, count }))
+                    .sort((a, b) => b.count - a.count);
+
+                setBestPriceProducts(bestPriceItems);
+                setCategoryStats(stats);
             } catch (error) {
-                console.error("Error fetching trending:", error);
+                console.error("Error fetching best prices:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchTrending();
+        fetchBestPrices();
     }, [id]);
+
     const displayedLocations = showAllLocations ? supermarket.locations : supermarket.locations.slice(0, 6);
+
+    // Filter products by selected category
+    const filteredProducts = selectedCategory
+        ? bestPriceProducts.filter(p => p.category === selectedCategory)
+        : bestPriceProducts;
 
     // Get color classes based on supermarket
     const getHeaderColor = () => {
@@ -137,25 +155,13 @@ export default function SupermarketTrending() {
         }
     };
 
-    const getTrendIcon = (trend) => {
-        switch (trend) {
-            case 'up':
-                return <TrendingUp className="h-4 w-4 text-red-500" />;
-            case 'down':
-                return <TrendingDown className="h-4 w-4 text-green-500" />;
-            default:
-                return <Minus className="h-4 w-4 text-gray-400" />;
-        }
-    };
-
-    const getTrendColor = (trend) => {
-        switch (trend) {
-            case 'up':
-                return 'text-red-600 bg-red-50';
-            case 'down':
-                return 'text-green-600 bg-green-50';
-            default:
-                return 'text-gray-600 bg-gray-50';
+    const getActiveBadgeColor = () => {
+        switch (id) {
+            case 'carrefour': return 'bg-blue-600 text-white';
+            case 'naivas': return 'bg-orange-500 text-white';
+            case 'quickmart': return 'bg-yellow-500 text-white';
+            case 'magunas': return 'bg-red-600 text-white';
+            default: return 'bg-primary-600 text-white';
         }
     };
 
@@ -219,11 +225,48 @@ export default function SupermarketTrending() {
                     )}
                 </div>
 
-                {/* Trending Items */}
+                {/* Best Price Categories */}
+                {!loading && categoryStats.length > 0 && (
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Grid3x3 className={`h-5 w-5 ${getIconColor()}`} />
+                            <h2 className="font-bold text-gray-900">Best Price Categories</h2>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">
+                            Categories where {supermarket.name} has the lowest prices
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setSelectedCategory(null)}
+                                className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${!selectedCategory
+                                        ? getActiveBadgeColor()
+                                        : `${getBadgeColor()} hover:opacity-80`
+                                    }`}
+                            >
+                                All ({bestPriceProducts.length})
+                            </button>
+                            {categoryStats.map(({ category, count }) => (
+                                <button
+                                    key={category}
+                                    onClick={() => setSelectedCategory(category)}
+                                    className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${selectedCategory === category
+                                            ? getActiveBadgeColor()
+                                            : `${getBadgeColor()} hover:opacity-80`
+                                        }`}
+                                >
+                                    {category} ({count})
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Best Price Products */}
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                     <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <TrendingUp className={`h-5 w-5 ${getIconColor()}`} />
-                        Trending Items
+                        {selectedCategory ? `Best Prices: ${selectedCategory}` : 'All Best Prices'}
                     </h2>
 
                     <div className="space-y-3">
@@ -231,8 +274,8 @@ export default function SupermarketTrending() {
                             <div className="flex justify-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                             </div>
-                        ) : trendingItems.length > 0 ? (
-                            trendingItems.map((item) => (
+                        ) : filteredProducts.length > 0 ? (
+                            filteredProducts.map((item) => (
                                 <Link
                                     key={item.id}
                                     to={`/product/${item.id}`}
@@ -247,17 +290,19 @@ export default function SupermarketTrending() {
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">{item.name}</h3>
                                         <p className="text-xs text-gray-500">{item.category}</p>
+                                        {item.location && (
+                                            <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                                                <MapPin className="h-3 w-3" />
+                                                {item.location}
+                                            </p>
+                                        )}
                                     </div>
 
-                                    {/* Price & Trend */}
+                                    {/* Price */}
                                     <div className="text-right flex-shrink-0">
                                         <div className="font-bold text-gray-900 text-lg">KES {item.currentPrice}</div>
-                                        <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getTrendColor(item.trend)}`}>
-                                            {getTrendIcon(item.trend)}
-                                            {item.trend !== 'stable' && (
-                                                <span>{Math.abs(item.priceChange)} ({Math.abs(item.priceChangePercent)}%)</span>
-                                            )}
-                                            {item.trend === 'stable' && <span>Stable</span>}
+                                        <div className={`text-[10px] px-2 py-0.5 rounded-full ${getActiveBadgeColor()} font-bold`}>
+                                            BEST PRICE
                                         </div>
                                     </div>
                                 </Link>
@@ -265,8 +310,16 @@ export default function SupermarketTrending() {
                         ) : (
                             <div className="text-center py-12">
                                 <TrendingUp className={`h-12 w-12 ${getIconColor()} mx-auto mb-3 opacity-50`} />
-                                <p className="text-gray-500 font-medium">No trending items yet</p>
-                                <p className="text-sm text-gray-400 mt-1">Check back later for popular products at {supermarket.name}</p>
+                                <p className="text-gray-500 font-medium">
+                                    {selectedCategory
+                                        ? `No best price items in ${selectedCategory}`
+                                        : `No best price items at ${supermarket.name}`}
+                                </p>
+                                <p className="text-sm text-gray-400 mt-1">
+                                    {selectedCategory
+                                        ? 'Try selecting a different category'
+                                        : 'This supermarket may have competitive prices on specific items'}
+                                </p>
                             </div>
                         )}
                     </div>
