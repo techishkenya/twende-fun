@@ -145,12 +145,15 @@ export default function ProductDetail() {
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-12 h-12 rounded-full bg-${colorClass} flex items-center justify-center text-white font-bold text-lg`}>
+                                        <Link
+                                            to={`/supermarket/${supermarketId}`}
+                                            className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
+                                        >
+                                            <div className={`w-12 h-12 rounded-full bg-${colorClass} flex items-center justify-center text-white font-bold text-lg group-hover:scale-105 transition-transform`}>
                                                 {supermarket?.name?.charAt(0) || '?'}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                                <h3 className="font-bold text-gray-900 flex items-center gap-2 group-hover:text-primary-600 transition-colors">
                                                     {supermarket?.name || supermarketId}
                                                     {isCheapest && (
                                                         <span className={`px-2 py-0.5 bg-${colorClass} text-white text-xs rounded-full flex items-center gap-1`}>
@@ -164,7 +167,7 @@ export default function ProductDetail() {
                                                     {priceData.location || 'Location not specified'}
                                                 </p>
                                             </div>
-                                        </div>
+                                        </Link>
                                         <div className="text-right">
                                             <p className={`text-2xl font-bold ${isCheapest ? `text-${colorClass}` : 'text-gray-900'}`}>
                                                 KES {priceData.price}
