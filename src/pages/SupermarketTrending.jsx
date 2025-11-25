@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Grid3x3 } from 'lucide-react';
-import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
+import { ArrowLeft, MapPin, TrendingUp, ChevronDown, ChevronUp, Grid3x3 } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { SUPERMARKETS } from '../lib/types';
 import { getCheapestPrice } from '../hooks/useFirestore';
@@ -240,8 +240,8 @@ export default function SupermarketTrending() {
                             <button
                                 onClick={() => setSelectedCategory(null)}
                                 className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${!selectedCategory
-                                        ? getActiveBadgeColor()
-                                        : `${getBadgeColor()} hover:opacity-80`
+                                    ? getActiveBadgeColor()
+                                    : `${getBadgeColor()} hover:opacity-80`
                                     }`}
                             >
                                 All ({bestPriceProducts.length})
@@ -251,8 +251,8 @@ export default function SupermarketTrending() {
                                     key={category}
                                     onClick={() => setSelectedCategory(category)}
                                     className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${selectedCategory === category
-                                            ? getActiveBadgeColor()
-                                            : `${getBadgeColor()} hover:opacity-80`
+                                        ? getActiveBadgeColor()
+                                        : `${getBadgeColor()} hover:opacity-80`
                                         }`}
                                 >
                                     {category} ({count})

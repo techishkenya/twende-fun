@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export default function SearchBar({ className = '', initialValue = '' }) {
