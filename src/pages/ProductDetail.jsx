@@ -65,6 +65,29 @@ export default function ProductDetail() {
         ? Math.round(priceValues.reduce((a, b) => a + b, 0) / priceValues.length)
         : 0;
 
+    // Get supermarket name for cheapest price
+    const cheapestSupermarketObj = SUPERMARKETS.find(s => s.id === cheapestSupermarket);
+    const cheapestSupermarketName = cheapestSupermarketObj?.name || 'a supermarket';
+
+    const handleShare = async () => {
+        const shareData = {
+            title: `Twende - ${product.name}`,
+            text: `Hey, this item "${product.name}" is cheapest at ${cheapestSupermarketName}!`,
+            url: window.location.href
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+                alert('Link copied to clipboard!');
+            }
+        } catch (err) {
+            console.error('Error sharing:', err);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
             {/* Header */}
@@ -76,7 +99,10 @@ export default function ProductDetail() {
                     >
                         <ArrowLeft className="h-6 w-6 text-gray-900" />
                     </button>
-                    <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors">
+                    <button
+                        onClick={handleShare}
+                        className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
+                    >
                         <Share2 className="h-6 w-6 text-gray-900" />
                     </button>
                 </div>
