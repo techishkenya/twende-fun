@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { usePrices, getCheapestPrice, getSupermarketColor } from '../hooks/useFirestore';
+import { usePrices, getCheapestPrice } from '../hooks/useFirestore';
 import { SUPERMARKETS } from '../lib/types';
+import { getSupermarketBranding } from '../lib/supermarketUtils';
+import { TrendingUp } from 'lucide-react';
 
 export default function ProductCard({ product }) {
     const navigate = useNavigate();
@@ -11,15 +13,23 @@ export default function ProductCard({ product }) {
     const cheapestPrice = cheapest?.price || 0;
     const cheapestSupermarket = cheapest?.supermarket || '';
     const supermarketName = SUPERMARKETS.find(s => s.id === cheapestSupermarket)?.name || '';
-    const colorClass = getSupermarketColor(cheapestSupermarket);
+
+    const branding = getSupermarketBranding(cheapestSupermarket);
+    const { colors } = branding;
 
     return (
         <div
             onClick={() => navigate(`/product/${product.id}`)}
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group"
+            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group relative"
         >
             {/* Product Image */}
-            <div className="aspect-square bg-gray-50 flex items-center justify-center p-4 group-hover:bg-gray-100 transition-colors">
+            <div className="aspect-square bg-gray-50 flex items-center justify-center p-4 group-hover:bg-gray-100 transition-colors relative">
+                {cheapestPrice > 0 && (
+                    <div className={`absolute top-2 right-2 ${colors.bg} text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm z-10`}>
+                        <TrendingUp className="h-3 w-3" />
+                        BEST PRICE
+                    </div>
+                )}
                 <img
                     src={product.image}
                     alt={product.name}
@@ -29,17 +39,20 @@ export default function ProductCard({ product }) {
 
             {/* Product Info */}
             <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors text-sm">
                     {product.name}
                 </h3>
                 <p className="text-xs text-gray-500 mb-3">{product.category}</p>
 
                 {cheapestPrice > 0 ? (
                     <div>
-                        <p className={`text-lg font-bold text-${colorClass}`}>
-                            From KES {cheapestPrice}
-                        </p>
-                        <p className="text-xs text-gray-500">
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xs text-gray-500 font-medium">Best:</span>
+                            <p className={`text-lg font-bold ${colors.text}`}>
+                                KES {cheapestPrice}
+                            </p>
+                        </div>
+                        <p className={`text-sm font-bold ${colors.text} mt-0.5`}>
                             at {supermarketName}
                         </p>
                     </div>
