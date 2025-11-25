@@ -1,46 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Store, MapPin } from 'lucide-react';
+import { getSupermarketBranding, getSupermarketInitials } from '../lib/supermarketUtils';
 
 export default function SupermarketCard({ supermarket }) {
     const navigate = useNavigate();
-
-    // Get color classes based on supermarket
-    const getColors = () => {
-        switch (supermarket.id) {
-            case 'carrefour':
-                return {
-                    bgLight: 'bg-blue-50',
-                    bg: 'bg-blue-600',
-                    text: 'text-blue-600'
-                };
-            case 'naivas':
-                return {
-                    bgLight: 'bg-orange-50',
-                    bg: 'bg-orange-500',
-                    text: 'text-orange-500'
-                };
-            case 'quickmart':
-                return {
-                    bgLight: 'bg-yellow-50',
-                    bg: 'bg-yellow-500',
-                    text: 'text-yellow-600'
-                };
-            case 'magunas':
-                return {
-                    bgLight: 'bg-red-50',
-                    bg: 'bg-red-600',
-                    text: 'text-red-600'
-                };
-            default:
-                return {
-                    bgLight: 'bg-primary-50',
-                    bg: 'bg-primary-600',
-                    text: 'text-primary-600'
-                };
-        }
-    };
-
-    const colors = getColors();
+    const branding = getSupermarketBranding(supermarket.id);
+    const { colors } = branding;
 
     return (
         <div
@@ -48,10 +13,12 @@ export default function SupermarketCard({ supermarket }) {
             className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
         >
             <div className="flex items-start gap-4">
-                {/* Logo */}
+                {/* Logo / Initials */}
                 <div className={`w-16 h-16 rounded-xl ${colors.bgLight} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
                     <div className={`w-12 h-12 rounded-lg ${colors.bg} flex items-center justify-center`}>
-                        <Store className="h-6 w-6 text-white" />
+                        <span className="text-white font-bold text-xl">
+                            {getSupermarketInitials(supermarket.name)}
+                        </span>
                     </div>
                 </div>
 
@@ -62,7 +29,7 @@ export default function SupermarketCard({ supermarket }) {
 
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                         <MapPin className="h-3 w-3" />
-                        <span>{supermarket.locations.length} branches</span>
+                        <span>{supermarket.locations?.length || 0} branches</span>
                     </div>
                 </div>
 

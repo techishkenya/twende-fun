@@ -104,6 +104,26 @@ export default function AdminDashboard() {
         return date.toLocaleDateString();
     };
 
+    const quickActions = [
+        {
+            label: 'Add New Product',
+            icon: Plus,
+            color: 'bg-blue-50 text-blue-600',
+            onClick: () => navigate('/admin/products', { state: { openAddModal: true } })
+        },
+        {
+            label: 'Update Prices',
+            icon: Edit,
+            color: 'bg-green-50 text-green-600',
+            onClick: () => navigate('/admin/products')
+        },
+        {
+            label: 'Review Submissions',
+            icon: FileCheck,
+            color: 'bg-yellow-50 text-yellow-600',
+            onClick: () => navigate('/admin/submissions')
+        }
+    ];
     const statCards = [
         {
             label: 'Total Products',

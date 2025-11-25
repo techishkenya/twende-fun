@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package, Star, Eye, ArrowUpDown } from 'lucide-react';
 import { CATEGORIES as DEFAULT_CATEGORIES } from '../../lib/types';
 import { getCheapestPrice, getSupermarketColor, useSupermarkets } from '../../hooks/useFirestore';
+import { getSupermarketInitials } from '../../lib/stringUtils';
 
 export default function ProductsManagement() {
+    const location = useLocation();
     const [products, setProducts] = useState([]);
     const [prices, setPrices] = useState({});
     const [categories, setCategories] = useState([]);
@@ -17,6 +20,7 @@ export default function ProductsManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [sortBy, setSortBy] = useState('popular'); // popular, newest, oldest
+    const [filterType, setFilterType] = useState('all'); // all, manual, auto
     const [editingProduct, setEditingProduct] = useState(null);
     const [editingPrices, setEditingPrices] = useState({});
     const [showAddCategory, setShowAddCategory] = useState(false);
@@ -24,6 +28,15 @@ export default function ProductsManagement() {
 
     // Fetch supermarkets dynamically
     const { supermarkets, loading: supermarketsLoading } = useSupermarkets();
+
+    // Handle navigation state for Quick Actions
+    useEffect(() => {
+        if (location.state?.openAddModal) {
+            setShowAddProduct(true);
+            // Clear state to prevent reopening on refresh (optional, but good practice)
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     // Initial fetch for categories
     useEffect(() => {
@@ -56,7 +69,7 @@ export default function ProductsManagement() {
                 setCategories(catsList);
             }
         } catch (error) {
-            console.error('Error fetching categories:', error);
+            // console.error('Error fetching categories:', error);
             // Fallback on error
             setCategories(DEFAULT_CATEGORIES.map(cat => ({ name: cat, productCount: 0 })));
         } finally {
@@ -87,7 +100,7 @@ export default function ProductsManagement() {
             setPrices(pricesMap);
 
         } catch (error) {
-            console.error('Error fetching products/prices:', error);
+            // console.error('Error fetching products/prices:', error);
         } finally {
             setProductsLoading(false);
         }
@@ -98,49 +111,88 @@ export default function ProductsManagement() {
     };
 
     // Filter products by category and search
-    let baseFiltered = selectedCategory
-        ? products.filter(product =>
-            product.category === selectedCategory &&
-            (product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.category?.toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-        : [];
+    const baseFiltered = useMemo(() => {
+        return selectedCategory
+            ? products.filter(product =>
+                product.category === selectedCategory &&
+                (product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    product.category?.toLowerCase().includes(searchTerm.toLowerCase()))
+            )
+            : [];
+    }, [selectedCategory, products, searchTerm]);
 
     // Sort products based on sortBy
-    const sortedProducts = [...baseFiltered].sort((a, b) => {
-        switch (sortBy) {
-            case 'popular':
-                return (b.viewCount || 0) - (a.viewCount || 0);
-            case 'newest':
-                return (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
-            case 'oldest':
-                return (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0);
-            default:
-                return 0;
-        }
-    });
+    const sortedProducts = useMemo(() => {
+        return [...baseFiltered].sort((a, b) => {
+            switch (sortBy) {
+                case 'popular':
+                    return (b.viewCount || 0) - (a.viewCount || 0);
+                case 'newest':
+                    return (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
+                case 'oldest':
+                    return (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0);
+                default:
+                    return 0;
+            }
+        });
+    }, [baseFiltered, sortBy]);
 
     // Get top 10 by views for auto-trending badge
-    const top10ByViews = [...baseFiltered]
-        .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
-        .slice(0, 10)
-        .map(p => p.id);
+    const top10ByViews = useMemo(() => {
+        return [...baseFiltered]
+            .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+            .slice(0, 10)
+            .map(p => p.id);
+    }, [baseFiltered]);
 
-    const filteredProducts = sortedProducts;
+    // Apply Filter Type
+    const filteredProducts = useMemo(() => {
+        return sortedProducts.filter(product => {
+            if (filterType === 'all') return true;
+            if (filterType === 'manual') return product.isTrending;
+            if (filterType === 'auto') return top10ByViews.includes(product.id);
+            return true;
+        });
+    }, [sortedProducts, filterType, top10ByViews]);
 
     const handleAddCategory = async (categoryName) => {
         try {
             const categoryId = categoryName.toLowerCase().replace(/\s+/g, '-');
+
+            // Try to persist defaults if needed, but don't block new category
+            try {
+                const categoriesRef = collection(db, 'categories');
+                const snapshot = await getDocs(categoriesRef);
+
+                if (snapshot.empty && categories.length > 0) {
+                    for (const cat of categories) {
+                        if (cat.id !== categoryId) {
+                            await setDoc(doc(db, 'categories', cat.id), {
+                                name: cat.name,
+                                productCount: 0,
+                                createdAt: new Date()
+                            });
+                        }
+                    }
+                }
+            } catch (persistError) {
+                console.error('Error persisting defaults:', persistError);
+            }
+
             await setDoc(doc(db, 'categories', categoryId), {
                 name: categoryName,
                 productCount: 0,
                 createdAt: new Date()
             });
-            setCategories([...categories, { id: categoryId, name: categoryName, productCount: 0 }]);
-            setShowAddCategory(false);
+
+            if (!categories.some(c => c.id === categoryId)) {
+                setCategories([...categories, { id: categoryId, name: categoryName, productCount: 0 }]);
+            }
         } catch (error) {
             console.error('Error adding category:', error);
             alert('Failed to add category');
+        } finally {
+            setShowAddCategory(false);
         }
     };
 
@@ -156,7 +208,7 @@ export default function ProductsManagement() {
                 await deleteDoc(doc(db, 'categories', categoryId));
                 setCategories(categories.filter(c => c.id !== categoryId));
             } catch (error) {
-                console.error('Error deleting category:', error);
+                // console.error('Error deleting category:', error);
                 alert('Failed to delete category');
             }
         }
@@ -172,7 +224,9 @@ export default function ProductsManagement() {
                 ...productData,
                 active: true,
                 createdAt: new Date(),
-                updatedAt: new Date()
+                updatedAt: new Date(),
+                updatedBy: currentUser.uid,
+                updatedByEmail: currentUser.email
             });
 
             // Initialize prices for all supermarkets (dynamic)
@@ -196,7 +250,7 @@ export default function ProductsManagement() {
             setPrices({ ...prices, [productId]: initialPrices });
             setShowAddProduct(false);
         } catch (error) {
-            console.error('Error adding product:', error);
+            // console.error('Error adding product:', error);
             alert('Failed to add product');
         }
     };
@@ -211,7 +265,7 @@ export default function ProductsManagement() {
                 delete newPrices[productId];
                 setPrices(newPrices);
             } catch (error) {
-                console.error('Error deleting product:', error);
+                // console.error('Error deleting product:', error);
                 alert('Failed to delete product');
             }
         }
@@ -221,27 +275,65 @@ export default function ProductsManagement() {
         try {
             await updateDoc(doc(db, 'products', productId), {
                 ...updatedData,
-                updatedAt: new Date()
+                updatedAt: new Date(),
+                updatedBy: currentUser.uid,
+                updatedByEmail: currentUser.email
             });
             setProducts(products.map(p => p.id === productId ? { ...p, ...updatedData } : p));
             setEditingProduct(null);
         } catch (error) {
-            console.error('Error updating product:', error);
+            // console.error('Error updating product:', error);
             alert('Failed to update product');
         }
     };
 
     const handleUpdatePrices = async (productId, newPrices) => {
         try {
-            const priceRef = doc(db, 'prices', productId);
-            await updateDoc(priceRef, { prices: newPrices });
-            setPrices({ ...prices, [productId]: newPrices });
+            const productRef = doc(db, 'products', productId);
+            const priceUpdates = {};
+
+            // Calculate new average price
+            let total = 0;
+            let count = 0;
+
+            Object.entries(newPrices).forEach(([supermarketId, data]) => {
+                if (data.price > 0) {
+                    priceUpdates[`prices.${supermarketId}`] = {
+                        price: Number(data.price),
+                        location: data.location || '',
+                        updatedAt: new Date()
+                    };
+                    total += Number(data.price);
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                priceUpdates.averagePrice = Math.round(total / count);
+            }
+
+            // Add audit fields
+            priceUpdates.updatedAt = new Date();
+            priceUpdates.updatedBy = currentUser.uid;
+            priceUpdates.updatedByEmail = currentUser.email;
+
+            await updateDoc(productRef, priceUpdates);
+
+            // Update local state
+            setPrices(prev => ({
+                ...prev,
+                [productId]: newPrices
+            }));
+
+            // Clear editing state
             const newEditingPrices = { ...editingPrices };
             delete newEditingPrices[productId];
             setEditingPrices(newEditingPrices);
+
+            alert('Prices updated successfully!');
         } catch (error) {
-            console.error('Error updating prices:', error);
-            alert('Failed to update prices');
+            // console.error('Error updating prices:', error);
+            alert('Error updating prices');
         }
     };
 
@@ -254,7 +346,7 @@ export default function ProductsManagement() {
                 p.id === productId ? { ...p, isTrending: !currentStatus } : p
             ));
         } catch (error) {
-            console.error('Error updating trending status:', error);
+            // console.error('Error updating trending status:', error);
             alert('Failed to update trending status');
         }
     };
@@ -273,39 +365,12 @@ export default function ProductsManagement() {
                     </p>
                 </div>
                 {!selectedCategory && (
-                    <div className="flex gap-2">
-                        <button
-                            onClick={async () => {
-                                if (confirm('This will re-initialize default categories. Continue?')) {
-                                    try {
-                                        setCategoriesLoading(true);
-                                        for (const cat of DEFAULT_CATEGORIES) {
-                                            const categoryId = cat.toLowerCase().replace(/\s+/g, '-');
-                                            await setDoc(doc(db, 'categories', categoryId), {
-                                                name: cat,
-                                                productCount: 0,
-                                                createdAt: new Date()
-                                            });
-                                        }
-                                        alert('Categories initialized!');
-                                        fetchCategories();
-                                    } catch (err) {
-                                        console.error(err);
-                                        alert('Error initializing categories');
-                                    } finally {
-                                        setCategoriesLoading(false);
-                                    }
-                                }
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors text-sm"
-                        >
-                            Initialize Defaults
-                        </button>
+                    <div className="flex gap-3">
                         <button
                             onClick={() => setShowAddCategory(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
                         >
-                            <Plus className="h-5 w-5" />
+                            <Grid3x3 className="h-5 w-5" />
                             Add Category
                         </button>
                     </div>
@@ -412,6 +477,20 @@ export default function ProductsManagement() {
                                     <option value="popular">Popular (Most Views)</option>
                                     <option value="newest">Newest First</option>
                                     <option value="oldest">Oldest First</option>
+                                </select>
+                            </div>
+
+                            {/* Filter Dropdown */}
+                            <div className="relative min-w-[180px]">
+                                <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <select
+                                    value={filterType}
+                                    onChange={(e) => setFilterType(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none bg-white"
+                                >
+                                    <option value="all">All Products</option>
+                                    <option value="manual">Manual Trending</option>
+                                    <option value="auto">Auto Trending (Top 10)</option>
                                 </select>
                             </div>
                         </div>
@@ -569,7 +648,7 @@ export default function ProductsManagement() {
                                                     >
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <div className={`w-8 h-8 rounded-full bg-${colorClass} flex items-center justify-center text-white font-bold text-sm`}>
-                                                                {supermarket.name.charAt(0)}
+                                                                {getSupermarketInitials(supermarket.name, supermarkets.map(s => s.name))}
                                                             </div>
                                                             <span className="font-semibold text-gray-900 text-sm">{supermarket.name}</span>
                                                         </div>
@@ -670,10 +749,13 @@ export default function ProductsManagement() {
 // Add Category Modal
 function AddCategoryModal({ onClose, onSave }) {
     const [categoryName, setCategoryName] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave(categoryName);
+        setIsSubmitting(true);
+        await onSave(categoryName);
+        setIsSubmitting(false);
     };
 
     return (
@@ -696,6 +778,7 @@ function AddCategoryModal({ onClose, onSave }) {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                             placeholder="e.g., Frozen Foods"
                             required
+                            disabled={isSubmitting}
                         />
                     </div>
 
@@ -704,14 +787,16 @@ function AddCategoryModal({ onClose, onSave }) {
                             type="button"
                             onClick={onClose}
                             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                            disabled={isSubmitting}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                            disabled={isSubmitting}
                         >
-                            Add Category
+                            {isSubmitting ? 'Adding...' : 'Add Category'}
                         </button>
                     </div>
                 </form>

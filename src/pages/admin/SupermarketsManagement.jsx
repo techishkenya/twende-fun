@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Plus, Edit2, Trash2, Search, X, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, MapPin, Loader2, Globe } from 'lucide-react';
+import { getSupermarketInitials } from '../../lib/stringUtils';
+import { searchSupermarketLocations } from '../../services/mapsService';
 
 export default function SupermarketsManagement() {
     const [supermarkets, setSupermarkets] = useState([]);
@@ -24,14 +26,16 @@ export default function SupermarketsManagement() {
             setSupermarkets(supermarketsList);
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching supermarkets:', error);
+            // console.error('Error fetching supermarkets:', error);
             setLoading(false);
         }
     };
 
-    const filteredSupermarkets = supermarkets.filter(supermarket =>
-        supermarket.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredSupermarkets = useMemo(() => {
+        return supermarkets.filter(supermarket =>
+            supermarket.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [supermarkets, searchTerm]);
 
     const handleDelete = async (supermarketId) => {
         if (confirm('Are you sure you want to delete this supermarket? This will affect all associated prices.')) {
@@ -39,7 +43,7 @@ export default function SupermarketsManagement() {
                 await deleteDoc(doc(db, 'supermarkets', supermarketId));
                 setSupermarkets(supermarkets.filter(s => s.id !== supermarketId));
             } catch (error) {
-                console.error('Error deleting supermarket:', error);
+                // console.error('Error deleting supermarket:', error);
                 alert('Failed to delete supermarket');
             }
         }
@@ -66,7 +70,7 @@ export default function SupermarketsManagement() {
                 setShowAddModal(false);
             }
         } catch (error) {
-            console.error('Error saving supermarket:', error);
+            // console.error('Error saving supermarket:', error);
             alert('Failed to save supermarket');
         }
     };
@@ -117,11 +121,15 @@ export default function SupermarketsManagement() {
                         <div className={`h-2 bg-${supermarket.color || 'blue-600'}`}></div>
                         <div className="p-6">
                             <div className="flex items-start justify-between mb-4">
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-900">{supermarket.name}</h3>
-                                    <p className="text-sm text-gray-500">ID: {supermarket.id}</p>
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className={`w-10 h-10 rounded-full bg-${supermarket.color || 'blue-600'} flex items-center justify-center text-white font-bold text-lg flex-shrink-0`}>
+                                        {getSupermarketInitials(supermarket.name, supermarkets.map(s => s.name))}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="text-lg font-bold text-gray-900 truncate" title={supermarket.name}>{supermarket.name}</h3>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-shrink-0 ml-2">
                                     <button
                                         onClick={() => setEditingSupermarket(supermarket)}
                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -189,6 +197,40 @@ function SupermarketModal({ supermarket, onClose, onSave }) {
         locations: supermarket?.locations || []
     });
     const [newLocation, setNewLocation] = useState('');
+    const [isFetching, setIsFetching] = useState(false);
+
+    const handleFetchLocations = async () => {
+        if (!formData.name.trim()) {
+            alert('Please enter a supermarket name first');
+            return;
+        }
+
+        setIsFetching(true);
+        try {
+            const locations = await searchSupermarketLocations(formData.name);
+            if (locations.length > 0) {
+                // Filter out duplicates
+                const uniqueNewLocations = locations.filter(loc => !formData.locations.includes(loc));
+
+                if (uniqueNewLocations.length === 0) {
+                    alert('No new locations found.');
+                } else {
+                    setFormData(prev => ({
+                        ...prev,
+                        locations: [...prev.locations, ...uniqueNewLocations]
+                    }));
+                    alert(`Found and added ${uniqueNewLocations.length} locations.`);
+                }
+            } else {
+                alert('No locations found. Please ensure the Google Maps API Key is configured.');
+            }
+        } catch (error) {
+            // console.error('Error fetching locations:', error);
+            alert('Failed to fetch locations');
+        } finally {
+            setIsFetching(false);
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -246,14 +288,30 @@ function SupermarketModal({ supermarket, onClose, onSave }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Supermarket Name
                         </label>
-                        <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            placeholder="e.g., Carrefour"
-                            required
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                placeholder="e.g., Carrefour"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={handleFetchLocations}
+                                disabled={isFetching || !formData.name}
+                                className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                title="Search for branches on Google Maps"
+                            >
+                                {isFetching ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <Globe className="h-5 w-5" />
+                                )}
+                                <span className="hidden sm:inline">Find Branches</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Color */}

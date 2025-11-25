@@ -117,17 +117,13 @@ export function getCheapestPrice(prices) {
     }, entries[0][1]);
 }
 
+import { getSupermarketColor as getUtilsColor } from '../lib/supermarketUtils';
+
 /**
  * Utility: Get supermarket brand color
  */
 export function getSupermarketColor(supermarketId) {
-    const colors = {
-        carrefour: 'blue-600',
-        naivas: 'green-600',
-        quickmart: 'red-600',
-        magunas: 'yellow-600'
-    };
-    return colors[supermarketId] || 'gray-600';
+    return getUtilsColor(supermarketId);
 }
 
 /**

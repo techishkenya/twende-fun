@@ -14,15 +14,25 @@ import Achievements from './pages/Achievements';
 import HelpSupport from './pages/HelpSupport';
 import SupermarketTrending from './pages/SupermarketTrending';
 
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminLayout from './components/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import ProductsManagement from './pages/admin/ProductsManagement';
-import SupermarketsManagement from './pages/admin/SupermarketsManagement';
-import SubmissionsManagement from './pages/admin/SubmissionsManagement';
-import UsersManagement from './pages/admin/UsersManagement';
-import DataUtility from './pages/admin/DataUtility';
+import { lazy, Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
+
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./components/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const ProductsManagement = lazy(() => import('./pages/admin/ProductsManagement'));
+const SupermarketsManagement = lazy(() => import('./pages/admin/SupermarketsManagement'));
+const SubmissionsManagement = lazy(() => import('./pages/admin/SubmissionsManagement'));
+const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'));
+const DataUtility = lazy(() => import('./pages/admin/DataUtility'));
+const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'));
 import PrivateRoute from './components/PrivateRoute';
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+  </div>
+);
 
 function App() {
   return (
@@ -48,20 +58,55 @@ function App() {
 
           {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/login" element={
+            <Suspense fallback={<PageLoader />}>
+              <AdminLogin />
+            </Suspense>
+          } />
 
           <Route path="/admin" element={
             <PrivateRoute>
-              <AdminLayout />
+              <Suspense fallback={<PageLoader />}>
+                <AdminLayout />
+              </Suspense>
             </PrivateRoute>
           }>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="products" element={<ProductsManagement />} />
-            <Route path="supermarkets" element={<SupermarketsManagement />} />
-            <Route path="submissions" element={<SubmissionsManagement />} />
-            <Route path="users" element={<UsersManagement />} />
-            <Route path="data-utility" element={<DataUtility />} />
+            <Route path="dashboard" element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminDashboard />
+              </Suspense>
+            } />
+            <Route path="products" element={
+              <Suspense fallback={<PageLoader />}>
+                <ProductsManagement />
+              </Suspense>
+            } />
+            <Route path="supermarkets" element={
+              <Suspense fallback={<PageLoader />}>
+                <SupermarketsManagement />
+              </Suspense>
+            } />
+            <Route path="submissions" element={
+              <Suspense fallback={<PageLoader />}>
+                <SubmissionsManagement />
+              </Suspense>
+            } />
+            <Route path="users" element={
+              <Suspense fallback={<PageLoader />}>
+                <UsersManagement />
+              </Suspense>
+            } />
+            <Route path="data-utility" element={
+              <Suspense fallback={<PageLoader />}>
+                <DataUtility />
+              </Suspense>
+            } />
+            <Route path="profile" element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminProfile />
+              </Suspense>
+            } />
           </Route>
         </Routes>
       </Router>
