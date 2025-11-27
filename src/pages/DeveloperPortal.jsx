@@ -117,7 +117,7 @@ export default function DeveloperPortal() {
                         Getting Started
                     </h2>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="space-y-6">
                         {/* Step 1 */}
                         <StepCard
                             number="1"
@@ -321,7 +321,6 @@ print(f"Updated {result['data']['successful']} prices")`}
                             title="Go Live!"
                             icon={Rocket}
                             color="pink"
-                            isLast={true}
                         >
                             <p className="text-gray-700 mb-4">
                                 Ready to go live? Here's what happens:
@@ -381,7 +380,7 @@ print(f"Updated {result['data']['successful']} prices")`}
                         Where Your Data Appears
                     </h2>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 md:p-8">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="text-center">
                                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -481,27 +480,27 @@ print(f"Updated {result['data']['successful']} prices")`}
                         Product Mapping Guide
                     </h2>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="p-8">
-                            <p className="text-gray-700 mb-6">
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 md:p-8">
+                            <p className="text-gray-700">
                                 Before you can update prices, you need to <strong>map your product SKUs to Tracker KE product IDs</strong>.
                                 Here's how to do it:
                             </p>
+                        </div>
 
-                            {/* Step-by-step mapping guide */}
-                            <div className="space-y-6">
-                                {/* Step 1: Fetch Product Catalog */}
-                                <div className="border-l-4 border-blue-500 pl-4">
-                                    <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">1</span>
-                                        Fetch Our Product Catalog
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mb-3">
-                                        Get the complete list of products available on Tracker KE:
-                                    </p>
-                                    <CodeBlock
-                                        language="bash"
-                                        code={`curl -X GET "https://us-central1-twende-a3958.cloudfunctions.net/api/v1/products?limit=100" \\
+                        {/* Step 1: Fetch Product Catalog */}
+                        <StepCard
+                            number="1"
+                            title="Fetch Our Product Catalog"
+                            icon={Database}
+                            color="blue"
+                        >
+                            <p className="text-gray-600 mb-3">
+                                Get the complete list of products available on Tracker KE:
+                            </p>
+                            <CodeBlock
+                                language="bash"
+                                code={`curl -X GET "https://us-central1-twende-a3958.cloudfunctions.net/api/v1/products?limit=100" \\
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # Response includes:
@@ -517,114 +516,117 @@ print(f"Updated {result['data']['successful']} prices")`}
 #     ]
 #   }
 # }`}
-                                        onCopy={() => copyToClipboard('curl command', 'Fetch products')}
-                                    />
-                                </div>
+                                onCopy={() => copyToClipboard('curl command', 'Fetch products')}
+                            />
+                        </StepCard>
 
-                                {/* Step 2: Create Mapping Table */}
-                                <div className="border-l-4 border-purple-500 pl-4">
-                                    <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm">2</span>
-                                        Create a Mapping Table
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mb-3">
-                                        Store the mapping in your database or configuration file:
-                                    </p>
-                                    <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
-                                        <table className="min-w-full text-sm">
-                                            <thead className="bg-gray-100">
-                                                <tr>
-                                                    <th className="px-4 py-2 text-left font-semibold text-gray-900">Your SKU</th>
-                                                    <th className="px-4 py-2 text-left font-semibold text-gray-900">Tracker Product ID</th>
-                                                    <th className="px-4 py-2 text-left font-semibold text-gray-900">Product Name</th>
-                                                    <th className="px-4 py-2 text-left font-semibold text-gray-900">Match Method</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200">
-                                                <tr>
-                                                    <td className="px-4 py-2 font-mono text-gray-700">SKU-001</td>
-                                                    <td className="px-4 py-2 font-mono text-blue-600">prod_123456</td>
-                                                    <td className="px-4 py-2 text-gray-700">Coca Cola 500ml</td>
-                                                    <td className="px-4 py-2 text-gray-600">Barcode</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="px-4 py-2 font-mono text-gray-700">SKU-002</td>
-                                                    <td className="px-4 py-2 font-mono text-blue-600">prod_789012</td>
-                                                    <td className="px-4 py-2 text-gray-700">Bread White 400g</td>
-                                                    <td className="px-4 py-2 text-gray-600">Name Match</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="px-4 py-2 font-mono text-gray-700">SKU-003</td>
-                                                    <td className="px-4 py-2 font-mono text-blue-600">prod_345678</td>
-                                                    <td className="px-4 py-2 text-gray-700">Milk Full Cream 1L</td>
-                                                    <td className="px-4 py-2 text-gray-600">Manual</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                        {/* Step 2: Create Mapping Table */}
+                        <StepCard
+                            number="2"
+                            title="Create a Mapping Table"
+                            icon={BarChart3}
+                            color="purple"
+                        >
+                            <p className="text-gray-600 mb-3">
+                                Store the mapping in your database or configuration file:
+                            </p>
+                            <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto border border-gray-200">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left font-semibold text-gray-900">Your SKU</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-gray-900">Tracker Product ID</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-gray-900">Product Name</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-gray-900">Match Method</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        <tr>
+                                            <td className="px-4 py-2 font-mono text-gray-700">SKU-001</td>
+                                            <td className="px-4 py-2 font-mono text-blue-600">prod_123456</td>
+                                            <td className="px-4 py-2 text-gray-700">Coca Cola 500ml</td>
+                                            <td className="px-4 py-2 text-gray-600">Barcode</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="px-4 py-2 font-mono text-gray-700">SKU-002</td>
+                                            <td className="px-4 py-2 font-mono text-blue-600">prod_789012</td>
+                                            <td className="px-4 py-2 text-gray-700">Bread White 400g</td>
+                                            <td className="px-4 py-2 text-gray-600">Name Match</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="px-4 py-2 font-mono text-gray-700">SKU-003</td>
+                                            <td className="px-4 py-2 font-mono text-blue-600">prod_345678</td>
+                                            <td className="px-4 py-2 text-gray-700">Milk Full Cream 1L</td>
+                                            <td className="px-4 py-2 text-gray-600">Manual</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </StepCard>
 
-                                {/* Step 3: Matching Strategies */}
-                                <div className="border-l-4 border-green-500 pl-4">
-                                    <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm">3</span>
-                                        Matching Strategies
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mb-3">
-                                        Use these methods to match your products:
+                        {/* Step 3: Matching Strategies */}
+                        <StepCard
+                            number="3"
+                            title="Matching Strategies"
+                            icon={Zap}
+                            color="green"
+                        >
+                            <p className="text-gray-600 mb-3">
+                                Use these methods to match your products:
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4 text-blue-600" />
+                                        Barcode Match
+                                    </h4>
+                                    <p className="text-xs text-gray-600">
+                                        Most accurate. Match using EAN/UPC barcodes.
                                     </p>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                                <CheckCircle className="h-4 w-4 text-blue-600" />
-                                                Barcode Match
-                                            </h4>
-                                            <p className="text-xs text-gray-600">
-                                                Most accurate. Match using EAN/UPC barcodes.
-                                            </p>
-                                            <code className="text-xs text-gray-700 mt-2 block">
-                                                if product.barcode == your_barcode
-                                            </code>
-                                        </div>
-                                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                                <CheckCircle className="h-4 w-4 text-purple-600" />
-                                                Name Match
-                                            </h4>
-                                            <p className="text-xs text-gray-600">
-                                                Good fallback. Fuzzy match product names.
-                                            </p>
-                                            <code className="text-xs text-gray-700 mt-2 block">
-                                                if similarity(names) {'>'} 0.8
-                                            </code>
-                                        </div>
-                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                                <CheckCircle className="h-4 w-4 text-orange-600" />
-                                                Manual Mapping
-                                            </h4>
-                                            <p className="text-xs text-gray-600">
-                                                For unique items. Create manual mappings.
-                                            </p>
-                                            <code className="text-xs text-gray-700 mt-2 block">
-                                                mapping['SKU-003'] = 'prod_345678'
-                                            </code>
-                                        </div>
-                                    </div>
+                                    <code className="text-xs text-gray-700 mt-2 block bg-white/50 p-1 rounded">
+                                        if product.barcode == your_barcode
+                                    </code>
                                 </div>
-
-                                {/* Step 4: Sample Code */}
-                                <div className="border-l-4 border-orange-500 pl-4">
-                                    <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                        <span className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm">4</span>
-                                        Sample Mapping Code
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mb-3">
-                                        Here's a complete Python example:
+                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4 text-purple-600" />
+                                        Name Match
+                                    </h4>
+                                    <p className="text-xs text-gray-600">
+                                        Good fallback. Fuzzy match product names.
                                     </p>
-                                    <CodeBlock
-                                        language="python"
-                                        code={`import requests
+                                    <code className="text-xs text-gray-700 mt-2 block bg-white/50 p-1 rounded">
+                                        if similarity(names) {'>'} 0.8
+                                    </code>
+                                </div>
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4 text-orange-600" />
+                                        Manual Mapping
+                                    </h4>
+                                    <p className="text-xs text-gray-600">
+                                        For unique items. Create manual mappings.
+                                    </p>
+                                    <code className="text-xs text-gray-700 mt-2 block bg-white/50 p-1 rounded">
+                                        mapping['SKU-003'] = 'prod_345678'
+                                    </code>
+                                </div>
+                            </div>
+                        </StepCard>
+
+                        {/* Step 4: Sample Code */}
+                        <StepCard
+                            number="4"
+                            title="Sample Mapping Code"
+                            icon={Code}
+                            color="orange"
+                        >
+                            <p className="text-gray-600 mb-3">
+                                Here's a complete Python example:
+                            </p>
+                            <CodeBlock
+                                language="python"
+                                code={`import requests
 from difflib import SequenceMatcher
 
 API_KEY = "YOUR_API_KEY"
@@ -689,15 +691,15 @@ with open('product_mapping.json', 'w') as f:
     json.dump(mapping, f, indent=2)
 
 print(f"\\nMapped {len(mapping)}/{len(your_products)} products")`}
-                                        onCopy={() => copyToClipboard('Python mapping code', 'Mapping script')}
-                                    />
-                                </div>
-                            </div>
+                                onCopy={() => copyToClipboard('Python mapping code', 'Mapping script')}
+                            />
 
                             {/* Important Notes */}
-                            <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-                                <h4 className="font-semibold text-gray-900 mb-2">📝 Important Notes</h4>
-                                <ul className="text-sm text-gray-700 space-y-1">
+                            <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
+                                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                    <span className="text-xl">📝</span> Important Notes
+                                </h4>
+                                <ul className="text-sm text-gray-700 space-y-2">
                                     <li className="flex items-start gap-2">
                                         <span className="text-yellow-600 mt-0.5">•</span>
                                         <span>Save your mapping to a database or configuration file</span>
@@ -716,7 +718,7 @@ print(f"\\nMapped {len(mapping)}/{len(your_products)} products")`}
                                     </li>
                                 </ul>
                             </div>
-                        </div>
+                        </StepCard>
                     </div>
                 </section>
 
@@ -777,6 +779,7 @@ print(f"\\nMapped {len(mapping)}/{len(your_products)} products")`}
 }
 
 // Helper Components
+// Helper Components
 function StepCard({ number, title, icon: Icon, color, children, isLast = false }) {
     const colorClasses = {
         blue: 'bg-blue-600',
@@ -787,17 +790,19 @@ function StepCard({ number, title, icon: Icon, color, children, isLast = false }
     };
 
     return (
-        <div className={`p-6 md:p-8 ${!isLast ? 'border-b border-gray-200' : ''}`}>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 md:p-8 transition-all hover:shadow-md">
             <div className="flex items-start gap-4 mb-4">
-                <div className={`w-12 h-12 ${colorClasses[color]} text-white rounded-full flex items-center justify-center flex-shrink-0 text-xl font-bold shadow-lg`}>
+                <div className={`w-10 h-10 md:w-12 md:h-12 ${colorClasses[color]} text-white rounded-full flex items-center justify-center flex-shrink-0 text-lg md:text-xl font-bold shadow-lg ring-4 ring-white`}>
                     {number}
                 </div>
-                <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                <div className="flex-1 pt-1">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
                         {title}
-                        <Icon className="h-5 w-5 text-gray-400" />
+                        <Icon className="h-5 w-5 text-gray-400 hidden sm:block" />
                     </h3>
-                    {children}
+                    <div className="prose prose-sm max-w-none text-gray-600">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>
@@ -805,44 +810,85 @@ function StepCard({ number, title, icon: Icon, color, children, isLast = false }
 }
 
 function CodeBlock({ language, code, onCopy }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const lines = code.split('\n');
+    const isLong = lines.length > 6;
+    const displayedCode = isExpanded || !isLong ? code : lines.slice(0, 6).join('\n');
+
     return (
-        <div className="relative bg-gray-900 rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
-                <span className="text-xs text-gray-400 font-mono">{language}</span>
-                <button
-                    onClick={onCopy}
-                    className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
-                >
-                    <Copy className="h-3 w-3" />
-                    Copy
-                </button>
+        <div className="relative bg-slate-900 rounded-xl overflow-hidden my-4 shadow-lg border border-slate-800 group">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/50 border-b border-slate-700/50 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50"></div>
+                    </div>
+                    <span className="text-xs text-slate-400 font-mono ml-2 uppercase tracking-wider">{language}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    {isLong && (
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors font-medium"
+                        >
+                            {isExpanded ? (
+                                <>
+                                    <ChevronUp className="h-3 w-3" />
+                                    Less
+                                </>
+                            ) : (
+                                <>
+                                    <ChevronDown className="h-3 w-3" />
+                                    More
+                                </>
+                            )}
+                        </button>
+                    )}
+                    <button
+                        onClick={onCopy}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+                    >
+                        <Copy className="h-3 w-3" />
+                        Copy
+                    </button>
+                </div>
             </div>
-            <pre className="p-4 overflow-x-auto">
-                <code className="text-sm text-gray-100 font-mono">{code}</code>
-            </pre>
+            <div className="relative">
+                <pre className={`p-4 overflow-x-auto text-sm font-mono leading-relaxed transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[1000px]' : 'max-h-48'}`}>
+                    <code className="text-slate-300">{displayedCode}</code>
+                </pre>
+                {!isExpanded && isLong && (
+                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none flex items-end justify-center pb-2">
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
 function APIEndpointCard({ method, endpoint, description, example }) {
     const methodColors = {
-        GET: 'bg-blue-100 text-blue-800',
-        POST: 'bg-green-100 text-green-800',
-        PUT: 'bg-orange-100 text-orange-800',
-        DELETE: 'bg-red-100 text-red-800'
+        GET: 'bg-blue-100 text-blue-700 border-blue-200',
+        POST: 'bg-green-100 text-green-700 border-green-200',
+        PUT: 'bg-orange-100 text-orange-700 border-orange-200',
+        DELETE: 'bg-red-100 text-red-700 border-red-200'
     };
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 transition-colors">
-            <div className="flex items-center gap-3 mb-3">
-                <span className={`px-2 py-1 rounded text-xs font-bold ${methodColors[method]}`}>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-300 transition-all hover:shadow-md group">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                <span className={`self-start px-2.5 py-1 rounded-md text-xs font-bold border ${methodColors[method]}`}>
                     {method}
                 </span>
-                <code className="text-sm font-mono text-gray-900">{endpoint}</code>
+                <code className="text-sm font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-100 group-hover:border-gray-200 transition-colors break-all">
+                    {endpoint}
+                </code>
             </div>
-            <p className="text-sm text-gray-600 mb-3">{description}</p>
-            <div className="bg-gray-50 rounded p-2">
-                <code className="text-xs text-gray-700 font-mono break-all">{example}</code>
+            <p className="text-sm text-gray-600 mb-4">{description}</p>
+            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                <div className="text-xs text-gray-400 mb-1 font-medium">Example:</div>
+                <code className="text-xs text-slate-600 font-mono break-all block">{example}</code>
             </div>
         </div>
     );
@@ -852,23 +898,26 @@ function FAQItem({ question, answer }) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:border-gray-300">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors gap-4"
             >
-                <span className="font-semibold text-gray-900 text-left">{question}</span>
+                <span className="font-semibold text-gray-900 text-left text-sm md:text-base">{question}</span>
                 {isOpen ? (
                     <ChevronUp className="h-5 w-5 text-gray-400 flex-shrink-0" />
                 ) : (
                     <ChevronDown className="h-5 w-5 text-gray-400 flex-shrink-0" />
                 )}
             </button>
-            {isOpen && (
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <p className="text-gray-700">{answer}</p>
+            <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                    }`}
+            >
+                <div className="px-6 pb-4 bg-gray-50/50 border-t border-gray-100">
+                    <p className="text-gray-600 text-sm leading-relaxed pt-4">{answer}</p>
                 </div>
-            )}
+            </div>
         </div>
     );
 }
