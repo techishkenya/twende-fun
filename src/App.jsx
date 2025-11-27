@@ -34,15 +34,14 @@ const DataUtility = lazy(() => import('./pages/admin/DataUtility'));
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'));
 
 import PrivateRoute from './components/PrivateRoute';
+import { Toaster } from 'react-hot-toast';
+import CookieConsent from './components/auth/CookieConsent';
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
     <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
   </div>
 );
-
-import { Toaster } from 'react-hot-toast';
-import CookieConsent from './components/auth/CookieConsent';
 
 function App() {
   return (
@@ -64,7 +63,7 @@ function App() {
             } />
             <Route path="/search" element={
               <Suspense fallback={<PageLoader />}>
-                <Search />
+                <SearchPage />
               </Suspense>
             } />
             <Route path="/supermarket/:id" element={<SupermarketTrending />} />
