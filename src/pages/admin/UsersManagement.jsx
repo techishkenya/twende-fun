@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, updateDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useAdmin } from '../../context/AdminContext';
 import { Search, Shield, User, TrendingUp, Plus, X } from 'lucide-react';
 
 export default function UsersManagement() {
     const { currentUser } = useAuth();
+    const { viewMode } = useAdmin();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -15,10 +17,14 @@ export default function UsersManagement() {
         const fetchUsers = async () => {
             try {
                 const querySnapshot = await getDocs(collection(db, 'users'));
-                const usersList = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const isDemoMode = viewMode === 'demo';
+                const usersList = querySnapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(u => isDemoMode ? u.isDemo === true : u.isDemo !== true);
+
                 setUsers(usersList);
                 setLoading(false);
             } catch {
@@ -28,7 +34,7 @@ export default function UsersManagement() {
         };
 
         fetchUsers();
-    }, []);
+    }, [viewMode]);
 
     const filteredUsers = users.filter(user =>
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -37,6 +43,7 @@ export default function UsersManagement() {
 
     const handleAddUser = async (userData) => {
         try {
+            const isDemoMode = viewMode === 'demo';
             // Generate a simple user ID
             const userId = `user_${Date.now()}`;
             const newUser = {
@@ -46,6 +53,10 @@ export default function UsersManagement() {
                 createdBy: currentUser.uid,
                 createdByEmail: currentUser.email
             };
+
+            if (isDemoMode) {
+                newUser.isDemo = true;
+            }
 
             await setDoc(doc(db, 'users', userId), newUser);
 

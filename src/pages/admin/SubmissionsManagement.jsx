@@ -4,7 +4,10 @@ import { db } from '../../lib/firebase';
 import { Check, X, Search, Filter, Clock } from 'lucide-react';
 import { useProducts, useSupermarkets } from '../../hooks/useFirestore';
 
+import { useAdmin } from '../../context/AdminContext';
+
 export default function SubmissionsManagement() {
+    const { viewMode } = useAdmin();
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -17,10 +20,14 @@ export default function SubmissionsManagement() {
         const fetchSubmissions = async () => {
             try {
                 const querySnapshot = await getDocs(collection(db, 'submissions'));
-                const submissionsList = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const isDemoMode = viewMode === 'demo';
+                const submissionsList = querySnapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(s => isDemoMode ? s.isDemo === true : s.isDemo !== true);
+
                 setSubmissions(submissionsList);
                 setLoading(false);
             } catch (error) {
@@ -30,7 +37,7 @@ export default function SubmissionsManagement() {
         };
 
         fetchSubmissions();
-    }, []);
+    }, [viewMode]);
 
     const filteredSubmissions = submissions.filter(submission => {
         const product = products.find(p => p.id === submission.productId);

@@ -5,7 +5,7 @@ export default function HelpSupport() {
     const navigate = useNavigate();
 
     return (
-        <div className="pb-20 min-h-screen bg-gray-50">
+        <div className="bg-gray-50">
             <div className="bg-white p-4 shadow-sm sticky top-0 z-10 flex items-center gap-3 mb-6">
                 <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-900">
                     <ArrowLeft className="h-5 w-5" />

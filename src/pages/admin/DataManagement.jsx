@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { seedDemoData, deleteDemoData } from '../../lib/seedDemoData';
-import { Database, Trash2, RefreshCw, AlertTriangle, Package, Users, DollarSign, FileText } from 'lucide-react';
+import { deleteDemoData } from '../../lib/seedDemoData';
+import { initializeFirestore } from '../../lib/initializeFirestore';
+import { Database, Trash2, RefreshCw, AlertTriangle, Package, Users, DollarSign, FileText, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+import { useAdmin } from '../../context/AdminContext';
 
 export default function DataManagement() {
     const [loading, setLoading] = useState(false);
+    const { viewMode, setViewMode } = useAdmin();
     const [stats, setStats] = useState({
         demoUsers: 0,
         demoProducts: 0,
@@ -54,25 +58,23 @@ export default function DataManagement() {
             });
         } catch (error) {
             console.error('Error fetching stats:', error);
-            toast.error('Failed to load statistics');
+            // Don't toast on error to avoid spamming if permissions are still propagating
         }
     };
 
-    const handleSeedDemoData = async () => {
-        if (!confirm('This will create demo users and submissions. Continue?')) return;
-
+    const handleInitializeDemo = async () => {
         setLoading(true);
         try {
-            const result = await seedDemoData();
+            const result = await initializeFirestore();
             if (result.success) {
-                toast.success('Demo data created successfully!');
+                toast.success('Demo environment initialized successfully!');
                 await fetchStats();
             } else {
-                toast.error(result.message);
+                toast.error(result.error || 'Initialization failed');
             }
         } catch (error) {
-            console.error('Error seeding data:', error);
-            toast.error('Failed to seed demo data');
+            console.error('Error initializing demo:', error);
+            toast.error('Failed to initialize demo environment');
         } finally {
             setLoading(false);
         }
@@ -103,11 +105,46 @@ export default function DataManagement() {
         }
     };
 
+    const isDemoMode = viewMode === 'demo';
+
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">Data Management</h1>
-                <p className="text-gray-600 mt-1">Manage demo and production data</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Data Management</h1>
+                    <p className="text-gray-600 mt-1">Manage application data and environment mode</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className={`text-sm font-medium ${isDemoMode ? 'text-blue-600' : 'text-gray-500'}`}>Demo Mode</span>
+                    <button
+                        onClick={() => setViewMode(isDemoMode ? 'live' : 'demo')}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isDemoMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                        <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDemoMode ? 'translate-x-6' : 'translate-x-1'}`}
+                        />
+                    </button>
+                    <span className={`text-sm font-medium ${!isDemoMode ? 'text-green-600' : 'text-gray-500'}`}>Live Mode</span>
+                </div>
+            </div>
+
+            {/* Mode Banner */}
+            <div className={`p-4 rounded-xl border ${isDemoMode ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'}`}>
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isDemoMode ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
+                        {isDemoMode ? <Database className="h-6 w-6" /> : <RefreshCw className="h-6 w-6" />}
+                    </div>
+                    <div>
+                        <h3 className={`font-bold ${isDemoMode ? 'text-blue-900' : 'text-green-900'}`}>
+                            {isDemoMode ? 'Demo Environment Active' : 'Live Environment Active'}
+                        </h3>
+                        <p className={`text-sm ${isDemoMode ? 'text-blue-700' : 'text-green-700'}`}>
+                            {isDemoMode
+                                ? 'You are viewing and managing demo data. This data is safe to delete.'
+                                : 'You are viewing production data. Be careful with your actions.'}
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Statistics */}
@@ -117,10 +154,12 @@ export default function DataManagement() {
                         <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <Users className="h-6 w-6 text-blue-600" />
                         </div>
-                        <span className="text-xs text-gray-500">Demo</span>
+                        <span className="text-xs text-gray-500">{isDemoMode ? 'Demo' : 'Real'}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900">{stats.demoUsers}</h3>
-                    <p className="text-sm text-gray-600">Demo Users</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                        {isDemoMode ? stats.demoUsers : stats.realUsers}
+                    </h3>
+                    <p className="text-sm text-gray-600">Users</p>
                 </div>
 
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -128,10 +167,12 @@ export default function DataManagement() {
                         <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
                             <Package className="h-6 w-6 text-green-600" />
                         </div>
-                        <span className="text-xs text-gray-500">Demo</span>
+                        <span className="text-xs text-gray-500">{isDemoMode ? 'Demo' : 'Real'}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900">{stats.demoProducts}</h3>
-                    <p className="text-sm text-gray-600">Demo Products</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                        {isDemoMode ? stats.demoProducts : stats.realProducts}
+                    </h3>
+                    <p className="text-sm text-gray-600">Products</p>
                 </div>
 
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -139,10 +180,12 @@ export default function DataManagement() {
                         <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
                             <DollarSign className="h-6 w-6 text-purple-600" />
                         </div>
-                        <span className="text-xs text-gray-500">Demo</span>
+                        <span className="text-xs text-gray-500">{isDemoMode ? 'Demo' : 'Real'}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900">{stats.demoPrices}</h3>
-                    <p className="text-sm text-gray-600">Demo Prices</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                        {isDemoMode ? stats.demoPrices : stats.realPrices}
+                    </h3>
+                    <p className="text-sm text-gray-600">Prices</p>
                 </div>
 
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -150,84 +193,94 @@ export default function DataManagement() {
                         <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
                             <FileText className="h-6 w-6 text-orange-600" />
                         </div>
-                        <span className="text-xs text-gray-500">Demo</span>
+                        <span className="text-xs text-gray-500">{isDemoMode ? 'Demo' : 'Real'}</span>
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900">
-                        {stats.demoSubmissions + stats.demoProductSubmissions}
+                        {isDemoMode ? (stats.demoSubmissions + stats.demoProductSubmissions) : 0}
                     </h3>
-                    <p className="text-sm text-gray-600">Demo Submissions</p>
-                </div>
-            </div>
-
-            {/* Real Data Stats */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-blue-900 mb-4">Production Data</h3>
-                <div className="grid grid-cols-3 gap-4">
-                    <div>
-                        <p className="text-sm text-blue-700">Real Users</p>
-                        <p className="text-2xl font-bold text-blue-900">{stats.realUsers}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-blue-700">Real Products</p>
-                        <p className="text-2xl font-bold text-blue-900">{stats.realProducts}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-blue-700">Real Prices</p>
-                        <p className="text-2xl font-bold text-blue-900">{stats.realPrices}</p>
-                    </div>
+                    <p className="text-sm text-gray-600">Submissions</p>
                 </div>
             </div>
 
             {/* Actions */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Data Actions</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Environment Actions</h3>
 
                 <div className="space-y-4">
-                    {/* Seed Demo Data */}
-                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                        <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Database className="h-6 w-6 text-green-600" />
+                    {/* Go Live / Switch Mode Action */}
+                    <div className={`flex items-start gap-4 p-4 rounded-lg ${isDemoMode ? 'bg-green-50' : 'bg-blue-50'}`}>
+                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isDemoMode ? 'bg-green-100' : 'bg-blue-100'}`}>
+                            {isDemoMode ? <RefreshCw className="h-6 w-6 text-green-600" /> : <Database className="h-6 w-6 text-blue-600" />}
                         </div>
                         <div className="flex-1">
-                            <h4 className="font-bold text-gray-900 mb-1">Seed Demo Data</h4>
-                            <p className="text-sm text-gray-600 mb-3">
-                                Create 3 demo users (Alice, Brian, Carol) with varied submissions for testing and demonstration purposes.
+                            <h4 className={`font-bold mb-1 ${isDemoMode ? 'text-green-900' : 'text-blue-900'}`}>
+                                {isDemoMode ? 'Go Live' : 'Switch to Demo Mode'}
+                            </h4>
+                            <p className={`text-sm mb-3 ${isDemoMode ? 'text-green-700' : 'text-blue-700'}`}>
+                                {isDemoMode
+                                    ? 'Switch to Live Mode to view production data. This will hide all demo data from this view.'
+                                    : 'Switch back to Demo Mode to view and manage test data.'}
                             </p>
                             <button
-                                onClick={handleSeedDemoData}
-                                disabled={loading}
-                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                onClick={() => setViewMode(isDemoMode ? 'live' : 'demo')}
+                                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-white ${isDemoMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                             >
-                                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-                                Seed Demo Data
+                                <RefreshCw className="h-4 w-4" />
+                                {isDemoMode ? 'Switch to Live Mode' : 'Switch to Demo Mode'}
                             </button>
                         </div>
                     </div>
 
-                    {/* Delete Demo Data */}
-                    <div className="flex items-start gap-4 p-4 bg-red-50 rounded-lg border-2 border-red-200">
-                        <div className="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Trash2 className="h-6 w-6 text-red-600" />
+                    {/* Initialize Demo Environment - Only visible in Demo Mode */}
+                    {isDemoMode && (
+                        <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                            <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Play className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-bold text-blue-900 mb-1">Initialize Demo Environment</h4>
+                                <p className="text-sm text-blue-700 mb-3">
+                                    Populate the database with a complete set of demo data: Users, Products, Prices, and Submissions.
+                                    Use this if the demo environment is empty.
+                                </p>
+                                <button
+                                    onClick={handleInitializeDemo}
+                                    disabled={loading}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                                    Initialize Data
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex-1">
-                            <h4 className="font-bold text-red-900 mb-1 flex items-center gap-2">
-                                Delete All Demo Data
-                                <AlertTriangle className="h-5 w-5 text-red-600" />
-                            </h4>
-                            <p className="text-sm text-red-700 mb-3">
-                                <strong>Danger Zone:</strong> This will permanently delete all data marked with <code className="bg-red-200 px-1 rounded">isDemo: true</code>.
-                                Real user data will NOT be affected.
-                            </p>
-                            <button
-                                onClick={() => setShowDeleteModal(true)}
-                                disabled={loading || stats.demoUsers === 0}
-                                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete Demo Data
-                            </button>
+                    )}
+
+                    {/* Delete Demo Data - Only visible in Demo Mode */}
+                    {isDemoMode && (
+                        <div className="flex items-start gap-4 p-4 bg-red-50 rounded-lg border-2 border-red-200">
+                            <div className="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Trash2 className="h-6 w-6 text-red-600" />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-bold text-red-900 mb-1 flex items-center gap-2">
+                                    Delete All Demo Data
+                                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                                </h4>
+                                <p className="text-sm text-red-700 mb-3">
+                                    <strong>Danger Zone:</strong> This will permanently delete all data marked as demo.
+                                    Real user data will NOT be affected.
+                                </p>
+                                <button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    disabled={loading || stats.demoUsers === 0}
+                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete Demo Data
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 

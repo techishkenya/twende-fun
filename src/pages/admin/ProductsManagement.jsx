@@ -1,23 +1,25 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package, Star, Eye, ArrowUpDown, FileSpreadsheet } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package, Star, Eye, ArrowUpDown, FileSpreadsheet, Barcode } from 'lucide-react';
 import { CATEGORIES as DEFAULT_CATEGORIES } from '../../lib/types';
 import { getCheapestPrice, getSupermarketColor, useSupermarkets } from '../../hooks/useFirestore';
 import { getSupermarketInitials } from '../../lib/stringUtils';
 import { useAuth } from '../../context/AuthContext';
+import { useAdmin } from '../../context/AdminContext';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../../components/admin/BulkImportModal';
 
 export default function ProductsManagement() {
     const { currentUser } = useAuth();
+    const { viewMode } = useAdmin();
     const location = useLocation();
     const [products, setProducts] = useState([]);
     const [prices, setPrices] = useState({});
     const [categories, setCategories] = useState([]);
 
-    // Loading states
+    // ... (loading states)
     const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [productsLoading, setProductsLoading] = useState(false);
 
@@ -43,20 +45,11 @@ export default function ProductsManagement() {
         }
     }, [location]);
 
-    // Initial fetch for categories
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    // Fetch products when category is selected or initially (if we want to show counts)
-    useEffect(() => {
-        fetchProductsAndPrices();
-    }, []);
-
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             setCategoriesLoading(true);
             const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+            const isDemoMode = viewMode === 'demo';
 
             if (categoriesSnapshot.empty) {
                 // Fallback for display only, don't write to DB here to avoid race conditions
@@ -67,10 +60,12 @@ export default function ProductsManagement() {
                 }));
                 setCategories(defaultCats);
             } else {
-                const catsList = categoriesSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const catsList = categoriesSnapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(c => isDemoMode ? c.isDemo === true : c.isDemo !== true);
                 setCategories(catsList);
             }
         } catch {
@@ -80,27 +75,37 @@ export default function ProductsManagement() {
         } finally {
             setCategoriesLoading(false);
         }
-    };
+    }, [viewMode]);
 
-    const fetchProductsAndPrices = async () => {
+    const fetchProductsAndPrices = useCallback(async () => {
         try {
             setProductsLoading(true);
 
-            // Parallel fetch
+            // Fetch all products and prices from Firestore
+            // Note: We filter client-side to handle cases where 'isDemo' might be undefined (treated as live data)
             const [productsSnapshot, pricesSnapshot] = await Promise.all([
                 getDocs(collection(db, 'products')),
                 getDocs(collection(db, 'prices'))
             ]);
 
-            const productsList = productsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const isDemoMode = viewMode === 'demo';
+
+            // DATA SEPARATION FILTER:
+            // Demo Mode: Show only products where isDemo === true
+            // Live Mode: Show only products where isDemo !== true (includes undefined)
+            const productsList = productsSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(p => isDemoMode ? p.isDemo === true : p.isDemo !== true);
+
             setProducts(productsList);
 
             const pricesMap = {};
             pricesSnapshot.docs.forEach(doc => {
-                pricesMap[doc.id] = doc.data().prices;
+                const data = doc.data();
+                // Filter prices matching the current mode (demo or live)
+                if (isDemoMode ? data.isDemo === true : data.isDemo !== true) {
+                    pricesMap[doc.id] = data.prices;
+                }
             });
             setPrices(pricesMap);
 
@@ -109,7 +114,17 @@ export default function ProductsManagement() {
         } finally {
             setProductsLoading(false);
         }
-    };
+    }, [viewMode]);
+
+    // Initial fetch for categories
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    // Fetch products when category is selected or initially (if we want to show counts)
+    useEffect(() => {
+        fetchProductsAndPrices();
+    }, [fetchProductsAndPrices]);
 
     const getCategoryProductCount = (categoryName) => {
         return products.filter(p => p.category === categoryName).length;
@@ -162,6 +177,7 @@ export default function ProductsManagement() {
 
     const handleAddCategory = async (categoryName) => {
         try {
+            const isDemoMode = viewMode === 'demo';
             const categoryId = categoryName.toLowerCase().replace(/\s+/g, '-');
 
             // Try to persist defaults if needed, but don't block new category
@@ -175,7 +191,8 @@ export default function ProductsManagement() {
                             await setDoc(doc(db, 'categories', cat.id), {
                                 name: cat.name,
                                 productCount: 0,
-                                createdAt: new Date()
+                                createdAt: new Date(),
+                                isDemo: isDemoMode // Persist current mode for defaults? Maybe not needed for defaults.
                             });
                         }
                     }
@@ -184,14 +201,20 @@ export default function ProductsManagement() {
                 console.error('Error persisting defaults:', persistError);
             }
 
-            await setDoc(doc(db, 'categories', categoryId), {
+            const newCategory = {
                 name: categoryName,
                 productCount: 0,
                 createdAt: new Date()
-            });
+            };
+
+            if (isDemoMode) {
+                newCategory.isDemo = true;
+            }
+
+            await setDoc(doc(db, 'categories', categoryId), newCategory);
 
             if (!categories.some(c => c.id === categoryId)) {
-                setCategories([...categories, { id: categoryId, name: categoryName, productCount: 0 }]);
+                setCategories([...categories, { id: categoryId, ...newCategory }]);
             }
         } catch {
             toast.error('Failed to add category');
@@ -212,7 +235,6 @@ export default function ProductsManagement() {
                 await deleteDoc(doc(db, 'categories', categoryId));
                 setCategories(categories.filter(c => c.id !== categoryId));
             } catch {
-                // console.error('Error deleting category:', error);
                 toast.error('Failed to delete category');
             }
         }
@@ -220,18 +242,25 @@ export default function ProductsManagement() {
 
     const handleAddProduct = async (productData) => {
         try {
+            const isDemoMode = viewMode === 'demo';
             // Generate product ID
             const productId = `${productData.category.toLowerCase().substring(0, 2)}-${Date.now()}`;
 
             // Add product
-            await setDoc(doc(db, 'products', productId), {
+            const newProduct = {
                 ...productData,
                 active: true,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 updatedBy: currentUser.uid,
                 updatedByEmail: currentUser.email
-            });
+            };
+
+            if (isDemoMode) {
+                newProduct.isDemo = true;
+            }
+
+            await setDoc(doc(db, 'products', productId), newProduct);
 
             // Initialize prices for all supermarkets (dynamic)
             const initialPrices = {};
@@ -243,18 +272,23 @@ export default function ProductsManagement() {
                 };
             });
 
-            await setDoc(doc(db, 'prices', productId), {
+            const newPrices = {
                 productId,
                 prices: initialPrices,
                 lastUpdated: new Date(),
                 verified: true
-            });
+            };
+
+            if (isDemoMode) {
+                newPrices.isDemo = true;
+            }
+
+            await setDoc(doc(db, 'prices', productId), newPrices);
 
             setProducts([...products, { id: productId, ...productData }]);
             setPrices({ ...prices, [productId]: initialPrices });
             setShowAddProduct(false);
         } catch {
-            // console.error('Error adding product:', error);
             toast.error('Failed to add product');
         }
     };
@@ -269,7 +303,6 @@ export default function ProductsManagement() {
                 delete newPrices[productId];
                 setPrices(newPrices);
             } catch {
-                // console.error('Error deleting product:', error);
                 toast.error('Failed to delete product');
             }
         }
@@ -286,14 +319,13 @@ export default function ProductsManagement() {
             setProducts(products.map(p => p.id === productId ? { ...p, ...updatedData } : p));
             setEditingProduct(null);
         } catch {
-            // console.error('Error updating product:', error);
             toast.error('Failed to update product');
         }
     };
 
     const handleUpdatePrices = async (productId, newPrices) => {
         try {
-            const productRef = doc(db, 'products', productId);
+            const pricesRef = doc(db, 'prices', productId);
             const priceUpdates = {};
 
             // Calculate new average price
@@ -302,6 +334,7 @@ export default function ProductsManagement() {
 
             Object.entries(newPrices).forEach(([supermarketId, data]) => {
                 if (data.price > 0) {
+                    // Update the specific supermarket's price in the 'prices' map
                     priceUpdates[`prices.${supermarketId}`] = {
                         price: Number(data.price),
                         location: data.location || '',
@@ -312,16 +345,21 @@ export default function ProductsManagement() {
                 }
             });
 
+            // Note: averagePrice is usually stored on the product, not the prices doc.
+            // If we want to update averagePrice on the product, we need a separate update.
             if (count > 0) {
-                priceUpdates.averagePrice = Math.round(total / count);
+                const averagePrice = Math.round(total / count);
+                await updateDoc(doc(db, 'products', productId), {
+                    averagePrice: averagePrice,
+                    updatedAt: new Date()
+                });
             }
 
-            // Add audit fields
-            priceUpdates.updatedAt = new Date();
-            priceUpdates.updatedBy = currentUser.uid;
-            priceUpdates.updatedByEmail = currentUser.email;
+            // Add audit fields to prices doc
+            priceUpdates.lastUpdated = new Date();
+            // priceUpdates.updatedBy = currentUser.uid; // prices doc might not have these fields at root
 
-            await updateDoc(productRef, priceUpdates);
+            await updateDoc(pricesRef, priceUpdates);
 
             // Update local state
             setPrices(prev => ({
@@ -335,8 +373,8 @@ export default function ProductsManagement() {
             setEditingPrices(newEditingPrices);
 
             toast.success('Prices updated successfully!');
-        } catch {
-            // console.error('Error updating prices:', error);
+        } catch (error) {
+            console.error('Error updating prices:', error);
             toast.error('Error updating prices');
         }
     };
@@ -568,6 +606,12 @@ export default function ProductsManagement() {
                                                             <Eye className="h-3 w-3" />
                                                             {product.viewCount || 0} views
                                                         </span>
+                                                        {product.barcode && (
+                                                            <span className="inline-flex items-center gap-1 text-xs text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded">
+                                                                <Barcode className="h-3 w-3" />
+                                                                {product.barcode}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {cheapest && (
                                                         <p className="text-sm text-gray-600 mt-2 flex items-center gap-1">
@@ -831,6 +875,7 @@ function AddProductModal({ category, onClose, onSave }) {
     const [formData, setFormData] = useState({
         name: '',
         category: category,
+        barcode: '',
         image: ''
     });
 
@@ -858,6 +903,18 @@ function AddProductModal({ category, onClose, onSave }) {
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                             placeholder="e.g., Brookside Milk 500ml"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Barcode (EAN/UPC)</label>
+                        <input
+                            type="text"
+                            value={formData.barcode}
+                            onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 font-mono"
+                            placeholder="e.g., 5449000000996"
                             required
                         />
                     </div>
@@ -906,6 +963,7 @@ function EditProductModal({ product, categories, onClose, onSave }) {
     const [formData, setFormData] = useState({
         name: product.name || '',
         category: product.category || '',
+        barcode: product.barcode || '',
         image: product.image || '',
         active: product.active !== false
     });
@@ -949,6 +1007,18 @@ function EditProductModal({ product, categories, onClose, onSave }) {
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Barcode (EAN/UPC)</label>
+                        <input
+                            type="text"
+                            value={formData.barcode}
+                            onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 font-mono"
+                            placeholder="e.g., 5449000000996"
+                            required
+                        />
                     </div>
 
                     <div>

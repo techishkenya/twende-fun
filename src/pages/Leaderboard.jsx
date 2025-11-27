@@ -10,7 +10,7 @@ const MOCK_LEADERS = [
 
 export default function Leaderboard() {
     return (
-        <div className="pb-20">
+        <div>
             <div className="bg-primary-600 text-white p-6 pb-12 rounded-b-[2.5rem] shadow-lg mb-6">
                 <h1 className="text-2xl font-display font-bold text-center">Leaderboard</h1>
                 <p className="text-primary-100 text-sm text-center mt-1">Top contributors this week</p>

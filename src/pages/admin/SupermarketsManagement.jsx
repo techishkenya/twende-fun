@@ -5,7 +5,10 @@ import { Plus, Edit2, Trash2, Search, X, MapPin, Loader2, Globe } from 'lucide-r
 import { getSupermarketInitials } from '../../lib/stringUtils';
 import { searchSupermarketLocations } from '../../services/mapsService';
 
+import { useAdmin } from '../../context/AdminContext';
+
 export default function SupermarketsManagement() {
+    const { viewMode } = useAdmin();
     const [supermarkets, setSupermarkets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -16,10 +19,17 @@ export default function SupermarketsManagement() {
         const fetchSupermarkets = async () => {
             try {
                 const querySnapshot = await getDocs(collection(db, 'supermarkets'));
-                const supermarketsList = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const isDemoMode = viewMode === 'demo';
+                const supermarketsList = querySnapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(s => {
+                        if (isDemoMode) return s.isDemo === true; // Strict demo
+                        return s.isDemo !== true; // Strict live
+                    });
+
                 setSupermarkets(supermarketsList);
                 setLoading(false);
             } catch {
@@ -29,7 +39,7 @@ export default function SupermarketsManagement() {
         };
 
         fetchSupermarkets();
-    }, []);
+    }, [viewMode]);
 
     const filteredSupermarkets = useMemo(() => {
         return supermarkets.filter(supermarket =>
@@ -51,6 +61,8 @@ export default function SupermarketsManagement() {
 
     const handleSave = async (supermarketData) => {
         try {
+            const isDemoMode = viewMode === 'demo';
+
             if (editingSupermarket) {
                 // Update existing supermarket
                 await updateDoc(doc(db, 'supermarkets', editingSupermarket.id), {
@@ -61,12 +73,19 @@ export default function SupermarketsManagement() {
                 setEditingSupermarket(null);
             } else {
                 // Add new supermarket
-                const docRef = await addDoc(collection(db, 'supermarkets'), {
+                const docData = {
                     ...supermarketData,
                     createdAt: new Date(),
                     updatedAt: new Date()
-                });
-                setSupermarkets([...supermarkets, { id: docRef.id, ...supermarketData }]);
+                };
+
+                // Tag as demo if created in demo mode
+                if (isDemoMode) {
+                    docData.isDemo = true;
+                }
+
+                const docRef = await addDoc(collection(db, 'supermarkets'), docData);
+                setSupermarkets([...supermarkets, { id: docRef.id, ...docData }]);
                 setShowAddModal(false);
             }
         } catch {

@@ -27,8 +27,11 @@ export default function CategoryGrid() {
             try {
                 const querySnapshot = await getDocs(collection(db, 'categories'));
                 if (!querySnapshot.empty) {
-                    const cats = querySnapshot.docs.map(doc => doc.data().name);
-                    setCategories(cats);
+                    const cats = querySnapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .filter(cat => cat.isDemo !== true) // Filter out demo categories
+                        .map(cat => cat.name);
+                    setCategories(cats.length > 0 ? cats : DEFAULT_CATEGORIES);
                 } else {
                     setCategories(DEFAULT_CATEGORIES);
                 }

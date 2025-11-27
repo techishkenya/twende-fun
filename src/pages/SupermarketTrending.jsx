@@ -26,16 +26,22 @@ export default function SupermarketTrending() {
             try {
                 // Fetch all active products
                 const productsSnapshot = await getDocs(collection(db, 'products'));
-                const allProducts = productsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const allProducts = productsSnapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(p => p.isDemo !== true); // Filter out demo products
 
                 // Fetch all prices
                 const pricesSnapshot = await getDocs(collection(db, 'prices'));
                 const allPrices = {};
                 pricesSnapshot.docs.forEach(doc => {
-                    allPrices[doc.id] = doc.data().prices;
+                    const data = doc.data();
+                    // Filter out demo prices
+                    if (data.isDemo !== true) {
+                        allPrices[doc.id] = data.prices;
+                    }
                 });
 
                 // Find products where this supermarket has the best price
@@ -95,7 +101,7 @@ export default function SupermarketTrending() {
 
     if (!supermarket) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="h-full flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">Supermarket Not Found</h1>
                     <button
@@ -170,7 +176,7 @@ export default function SupermarketTrending() {
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen pb-20">
+        <div className="bg-gray-50">
             {/* Header */}
             <div className={`bg-gradient-to-r ${getHeaderColor()} text-white p-6 pb-8 rounded-b-[2.5rem] shadow-lg`}>
                 <div className="flex items-center gap-4 mb-4">

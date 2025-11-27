@@ -39,7 +39,7 @@ export const DEMO_USERS = [
 ];
 
 // Demo product submissions
-const DEMO_PRODUCT_SUBMISSIONS = [
+export const DEMO_PRODUCT_SUBMISSIONS = [
     // Alice's submissions (active user - mostly approved)
     {
         userId: 'demo-user-alice',
@@ -49,6 +49,7 @@ const DEMO_PRODUCT_SUBMISSIONS = [
         category: 'Health & Beauty',
         newCategory: null,
         imageUrl: 'https://via.placeholder.com/150/10b981/fff?text=Dettol',
+        barcode: '6001106117804',
         status: 'approved',
         createdAt: new Date('2025-02-15'),
         reviewedAt: new Date('2025-02-16'),
@@ -62,6 +63,7 @@ const DEMO_PRODUCT_SUBMISSIONS = [
         category: 'Health & Beauty',
         newCategory: null,
         imageUrl: 'https://via.placeholder.com/150/10b981/fff?text=Colgate',
+        barcode: '8718951312354',
         status: 'approved',
         createdAt: new Date('2025-02-18'),
         reviewedAt: new Date('2025-02-19'),
@@ -76,6 +78,7 @@ const DEMO_PRODUCT_SUBMISSIONS = [
         category: 'Health & Beauty',
         newCategory: null,
         imageUrl: 'https://via.placeholder.com/150/3b82f6/fff?text=Nivea',
+        barcode: '4005900123456',
         status: 'pending',
         createdAt: new Date('2025-02-25'),
         isDemo: true
@@ -88,6 +91,7 @@ const DEMO_PRODUCT_SUBMISSIONS = [
         category: 'Pet Supplies',
         newCategory: 'Pet Supplies',
         imageUrl: 'https://via.placeholder.com/150/3b82f6/fff?text=Pedigree',
+        barcode: '5010394987654',
         status: 'rejected',
         createdAt: new Date('2025-02-20'),
         reviewedAt: new Date('2025-02-21'),
@@ -102,6 +106,7 @@ const DEMO_PRODUCT_SUBMISSIONS = [
         category: 'Health & Beauty',
         newCategory: null,
         imageUrl: 'https://via.placeholder.com/150/ec4899/fff?text=Dove',
+        barcode: '8712561876543',
         status: 'pending',
         createdAt: new Date('2025-02-26'),
         isDemo: true
@@ -109,7 +114,7 @@ const DEMO_PRODUCT_SUBMISSIONS = [
 ];
 
 // Demo price submissions  
-const DEMO_PRICE_SUBMISSIONS = [
+export const DEMO_PRICE_SUBMISSIONS = [
     // Alice's price submissions (experienced user)
     {
         userId: 'demo-user-alice',
@@ -192,6 +197,7 @@ const DEMO_PRODUCTS = [
         name: 'Dettol Hand Sanitizer 500ml',
         category: 'Health & Beauty',
         image: 'https://via.placeholder.com/150/10b981/fff?text=Dettol',
+        barcode: '6001106117804',
         active: true,
         submittedBy: 'demo-user-alice',
         createdAt: new Date('2025-02-16'),
@@ -203,6 +209,7 @@ const DEMO_PRODUCTS = [
         name: 'Colgate MaxFresh 150ml',
         category: 'Health & Beauty',
         image: 'https://via.placeholder.com/150/10b981/fff?text=Colgate',
+        barcode: '8718951312354',
         active: true,
         submittedBy: 'demo-user-alice',
         createdAt: new Date('2025-02-19'),
@@ -251,42 +258,42 @@ const DEMO_PRICES = [
  */
 export async function seedDemoData() {
     try {
-        console.log('🌱 Seeding demo data...');
+        // console.log('🌱 Seeding demo data...');
 
         // 1. Create demo users
         for (const user of DEMO_USERS) {
             await setDoc(doc(db, 'users', user.uid), user);
         }
-        console.log('✅ Created 3 demo users');
+        // console.log('✅ Created 3 demo users');
 
         // 2. Create demo product submissions
         for (const submission of DEMO_PRODUCT_SUBMISSIONS) {
             await addDoc(collection(db, 'product_submissions'), submission);
         }
-        console.log('✅ Created demo product submissions');
+        // console.log('✅ Created demo product submissions');
 
         // 3. Create demo price submissions
         for (const submission of DEMO_PRICE_SUBMISSIONS) {
             await addDoc(collection(db, 'submissions'), submission);
         }
-        console.log('✅ Created demo price submissions');
+        // console.log('✅ Created demo price submissions');
 
         // 4. Create demo approved products
         for (const product of DEMO_PRODUCTS) {
             await setDoc(doc(db, 'products', product.id), product);
         }
-        console.log('✅ Created demo products');
+        // console.log('✅ Created demo products');
 
         // 5. Create demo approved prices
         for (const price of DEMO_PRICES) {
             await addDoc(collection(db, 'prices'), price);
         }
-        console.log('✅ Created demo prices');
+        // console.log('✅ Created demo prices');
 
-        console.log('🎉 Demo data seeded successfully!');
+        // console.log('🎉 Demo data seeded successfully!');
         return { success: true, message: 'Demo data created successfully' };
     } catch (error) {
-        console.error('❌ Error seeding demo data:', error);
+        // console.error('❌ Error seeding demo data:', error);
         return { success: false, message: error.message };
     }
 }
@@ -298,7 +305,7 @@ export async function seedDemoData() {
  */
 export async function deleteDemoData() {
     try {
-        console.log('🗑️ Deleting demo data...');
+        // console.log('🗑️ Deleting demo data...');
 
         const deletedCounts = {
             users: 0,
@@ -356,14 +363,14 @@ export async function deleteDemoData() {
             deletedCounts.productSubmissions++;
         }
 
-        console.log('✅ Demo data deleted:', deletedCounts);
+        // console.log('✅ Demo data deleted:', deletedCounts);
         return {
             success: true,
             message: 'Demo data deleted successfully',
             deletedCounts
         };
     } catch (error) {
-        console.error('❌ Error deleting demo data:', error);
+        // console.error('❌ Error deleting demo data:', error);
         return { success: false, message: error.message };
     }
 }

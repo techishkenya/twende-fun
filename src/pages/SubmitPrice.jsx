@@ -35,7 +35,9 @@ export default function SubmitPrice() {
         const fetchProducts = async () => {
             const q = query(collection(db, 'products'), where('active', '==', true));
             const snapshot = await getDocs(q);
-            const prods = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            const prods = snapshot.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(p => p.isDemo !== true); // Filter out demo products
             setProducts(prods);
 
             if (preselectedProductId) {
@@ -62,6 +64,7 @@ export default function SubmitPrice() {
                 userName: currentUser.displayName,
                 userEmail: currentUser.email,
                 productName: productData.productName,
+                barcode: productData.barcode || '',
                 category: productData.category,
                 newCategory: productData.isNewCategory ? productData.category : null,
                 imageUrl: productData.imageUrl,
@@ -144,7 +147,7 @@ export default function SubmitPrice() {
     // Show login prompt if not authenticated
     if (!currentUser) {
         return (
-            <div className="min-h-screen bg-gray-50 pb-20 flex items-center justify-center p-4">
+            <div className="h-full bg-gray-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
                     <div className="h-16 w-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Upload className="h-8 w-8 text-primary-600" />
@@ -171,7 +174,7 @@ export default function SubmitPrice() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-gray-50">
             {/* Header */}
             <div className="bg-white p-4 sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center gap-3">

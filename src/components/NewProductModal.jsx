@@ -5,6 +5,7 @@ import { CATEGORIES } from '../lib/types';
 export default function NewProductModal({ onClose, onSubmit }) {
     const [formData, setFormData] = useState({
         productName: '',
+        barcode: '',
         category: '',
         newCategory: '',
         imageUrl: ''
@@ -15,12 +16,13 @@ export default function NewProductModal({ onClose, onSubmit }) {
 
         const category = formData.category === '__new__' ? formData.newCategory : formData.category;
 
-        if (!formData.productName || !category) {
+        if (!formData.productName || !category || !formData.barcode) {
             return;
         }
 
         onSubmit({
             productName: formData.productName,
+            barcode: formData.barcode,
             category,
             imageUrl: formData.imageUrl || 'https://via.placeholder.com/150',
             isNewCategory: formData.category === '__new__'
@@ -54,6 +56,21 @@ export default function NewProductModal({ onClose, onSubmit }) {
                             onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                             placeholder="e.g., Coca Cola 500ml"
+                            required
+                        />
+                    </div>
+
+                    {/* Barcode (Optional but recommended) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Barcode (EAN/UPC)
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.barcode}
+                            onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
+                            placeholder="e.g., 6161234567890"
                             required
                         />
                     </div>

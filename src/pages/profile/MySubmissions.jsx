@@ -46,7 +46,7 @@ export default function MySubmissions() {
     if (!currentUser) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-gray-50">
             <div className="bg-white p-4 shadow-sm sticky top-0 z-10 flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-900">
                     <ArrowLeft className="h-5 w-5" />

@@ -72,7 +72,7 @@ export default function Profile() {
 
     if (!currentUser) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 pb-24">
+            <div className="h-full bg-gray-50 flex flex-col items-center justify-center p-6 pb-24">
                 <TermsModal
                     isOpen={showTerms}
                     onClose={() => setShowTerms(false)}
@@ -112,7 +112,7 @@ export default function Profile() {
     ];
 
     return (
-        <div className="pb-20">
+        <div>
             <div className="bg-white p-6 mb-2">
                 <div className="flex items-center gap-3 mb-6">
                     <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-900">

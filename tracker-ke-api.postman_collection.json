@@ -1,0 +1,333 @@
+{
+    "info": {
+        "name": "Tracker KE - Supermarket API",
+        "description": "Complete API collection for supermarket integrations with Tracker KE",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "version": "1.0.0"
+    },
+    "item": [
+        {
+            "name": "Health & Status",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/health",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        },
+                        "description": "Check API availability and version"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Products",
+            "item": [
+                {
+                    "name": "Get All Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/products?limit=50&offset=0",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "category",
+                                    "value": "Beverages",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                },
+                                {
+                                    "key": "offset",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "coca",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Fetch product catalog with optional filters"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Single Product",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/products/{{product_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "products",
+                                "{{product_id}}"
+                            ]
+                        },
+                        "description": "Get details for a specific product including current prices"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Prices",
+            "item": [
+                {
+                    "name": "Update Single Price",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"product_id\": \"prod_123456\",\n  \"price\": 60.00,\n  \"currency\": \"KES\",\n  \"location\": \"Westlands Branch\",\n  \"stock_status\": \"in_stock\",\n  \"metadata\": {\n    \"promotion\": false,\n    \"discount_percentage\": 0\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/prices/single",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "prices",
+                                "single"
+                            ]
+                        },
+                        "description": "Update price for a single product"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Batch Update Prices",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"prices\": [\n    {\n      \"product_id\": \"prod_123456\",\n      \"price\": 60.00,\n      \"currency\": \"KES\",\n      \"location\": \"Westlands Branch\",\n      \"stock_status\": \"in_stock\"\n    },\n    {\n      \"product_id\": \"prod_789012\",\n      \"price\": 120.00,\n      \"currency\": \"KES\",\n      \"location\": \"Westlands Branch\",\n      \"stock_status\": \"limited_stock\"\n    },\n    {\n      \"product_id\": \"prod_345678\",\n      \"price\": 45.00,\n      \"currency\": \"KES\",\n      \"location\": \"Westlands Branch\",\n      \"stock_status\": \"in_stock\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/prices/batch",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "prices",
+                                "batch"
+                            ]
+                        },
+                        "description": "Update multiple prices in a single request (max 100)"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Product Sync",
+            "item": [
+                {
+                    "name": "Sync Product Catalog",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"products\": [\n    {\n      \"external_id\": \"SKU-001\",\n      \"name\": \"Coca Cola 500ml\",\n      \"category\": \"Beverages\",\n      \"barcode\": \"5449000000996\",\n      \"brand\": \"Coca Cola\",\n      \"unit_size\": \"500ml\",\n      \"image_url\": \"https://example.com/coke.jpg\",\n      \"attributes\": {\n        \"pack_size\": 1,\n        \"returnable_bottle\": false\n      }\n    },\n    {\n      \"external_id\": \"SKU-002\",\n      \"name\": \"Bread White 400g\",\n      \"category\": \"Bakery\",\n      \"barcode\": \"1234567890123\",\n      \"brand\": \"Elliots\",\n      \"unit_size\": \"400g\",\n      \"image_url\": \"https://example.com/bread.jpg\",\n      \"attributes\": {\n        \"type\": \"white\",\n        \"sliced\": true\n      }\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/products/sync",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "products",
+                                "sync"
+                            ]
+                        },
+                        "description": "Sync your product catalog with Tracker KE"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Error Examples",
+            "item": [
+                {
+                    "name": "401 Unauthorized (No API Key)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/products",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "products"
+                            ]
+                        },
+                        "description": "Example of missing authorization"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "400 Invalid Price",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"product_id\": \"prod_123456\",\n  \"price\": -10,\n  \"currency\": \"KES\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/prices/single",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "prices",
+                                "single"
+                            ]
+                        },
+                        "description": "Example of validation error (negative price)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "404 Product Not Found",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/products/invalid_product_id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "products",
+                                "invalid_product_id"
+                            ]
+                        },
+                        "description": "Example of product not found"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "https://us-central1-twende-a3958.cloudfunctions.net/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "api_key",
+            "value": "pk_demo_yourstore_xxxxx",
+            "type": "string"
+        },
+        {
+            "key": "api_secret",
+            "value": "sk_secret_xxxxx",
+            "type": "string"
+        },
+        {
+            "key": "product_id",
+            "value": "prod_123456",
+            "type": "string"
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{api_key}}",
+                "type": "string"
+            }
+        ]
+    }
+}

@@ -14,15 +14,18 @@ import {
     TrendingUp,
     Server,
     User,
-    Shield
+    Shield,
+    Key
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAdmin } from '../context/AdminContext';
 
 export default function AdminLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { currentUser, logout } = useAuth();
+    const { viewMode } = useAdmin();
     const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -38,23 +41,6 @@ export default function AdminLayout() {
                 const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
                 if (userDoc.exists() && userDoc.data().role === 'admin') {
                     setIsAdmin(true);
-
-                    // Log admin access
-                    // We use a session storage flag to prevent logging on every page refresh/navigation within the session
-                    const hasLoggedSession = sessionStorage.getItem('adminSessionLogged');
-                    if (!hasLoggedSession) {
-                        try {
-                            await addDoc(collection(db, 'admin_access_logs'), {
-                                uid: currentUser.uid,
-                                email: currentUser.email,
-                                timestamp: new Date(),
-                                userAgent: navigator.userAgent
-                            });
-                            sessionStorage.setItem('adminSessionLogged', 'true');
-                        } catch (logError) {
-                            console.error('Error logging access:', logError);
-                        }
-                    }
                 } else {
                     console.error('Access denied: User is not an admin');
                     navigate('/');
@@ -96,6 +82,7 @@ export default function AdminLayout() {
         { path: '/admin/supermarkets', label: 'Supermarkets', icon: Store },
         { path: '/admin/submissions', label: 'Submissions', icon: UserCheck },
         { path: '/admin/users', label: 'Users', icon: Users },
+        { path: '/admin/api', label: 'API Management', icon: Key },
     ];
 
     return (
@@ -146,15 +133,6 @@ export default function AdminLayout() {
                         >
                             <Shield className="h-4 w-4" />
                             <span>Data Management</span>
-                        </Link>
-
-                        <Link
-                            to="/admin/data-utility"
-                            onClick={() => setSidebarOpen(false)}
-                            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                            <Server className="h-4 w-4" />
-                            <span>Data Utility</span>
                         </Link>
 
                         <Link
@@ -237,6 +215,20 @@ export default function AdminLayout() {
 
                 {/* Content Area */}
                 <main className="flex-1 overflow-y-auto p-6">
+                    {viewMode === 'demo' && (
+                        <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-6 rounded-r shadow-sm flex items-center justify-between" role="alert">
+                            <div>
+                                <p className="font-bold flex items-center gap-2">
+                                    <Shield className="h-5 w-5" />
+                                    Demo Mode Active
+                                </p>
+                                <p className="text-sm">You are viewing and editing demo data. Changes will not affect the live environment.</p>
+                            </div>
+                            <Link to="/admin/data-management" className="text-sm underline hover:text-orange-900">
+                                Manage Data
+                            </Link>
+                        </div>
+                    )}
                     <Outlet />
                 </main>
             </div>

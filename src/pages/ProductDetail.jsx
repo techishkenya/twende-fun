@@ -34,7 +34,7 @@ export default function ProductDetail() {
 
     if (productLoading || pricesLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="h-full bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
         );
@@ -42,7 +42,7 @@ export default function ProductDetail() {
 
     if (productError || !product) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="h-full bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <h2 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h2>
                     <button onClick={() => navigate('/')} className="text-primary-600 hover:text-primary-700">
@@ -72,7 +72,7 @@ export default function ProductDetail() {
 
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
+        <div className="bg-gray-50">
             {/* Header */}
             <div className="relative bg-white">
                 <div className="absolute top-0 left-0 right-0 p-4 md:p-6 flex justify-between items-start z-10">

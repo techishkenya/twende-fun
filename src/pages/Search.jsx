@@ -37,7 +37,7 @@ export default function SearchPage() {
     });
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
+        <div className="bg-gray-50">
             {/* Search Header */}
             <div className="bg-white sticky top-0 z-30 px-4 md:px-6 lg:px-8 py-4 md:py-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">

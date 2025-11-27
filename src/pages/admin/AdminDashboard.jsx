@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Package, DollarSign, Store, Users, TrendingUp, Clock, Plus, Edit, FileCheck } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
+    const { viewMode } = useAdmin();
     const [stats, setStats] = useState({
         products: 0,
         prices: 0,
@@ -30,11 +32,32 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                // Get counts from collections
+                const isDemoMode = viewMode === 'demo';
+
+                // Get counts from collections with filtering
                 const productsSnap = await getDocs(collection(db, 'products'));
+                const filteredProducts = productsSnap.docs.filter(doc => {
+                    const data = doc.data();
+                    return isDemoMode ? data.isDemo === true : data.isDemo !== true;
+                });
+
                 const pricesSnap = await getDocs(collection(db, 'prices'));
+                const filteredPrices = pricesSnap.docs.filter(doc => {
+                    const data = doc.data();
+                    return isDemoMode ? data.isDemo === true : data.isDemo !== true;
+                });
+
                 const supermarketsSnap = await getDocs(collection(db, 'supermarkets'));
+                const filteredSupermarkets = supermarketsSnap.docs.filter(doc => {
+                    const data = doc.data();
+                    return isDemoMode ? data.isDemo === true : data.isDemo !== true;
+                });
+
                 const usersSnap = await getDocs(collection(db, 'users'));
+                const filteredUsers = usersSnap.docs.filter(doc => {
+                    const data = doc.data();
+                    return isDemoMode ? data.isDemo === true : data.isDemo !== true;
+                });
 
                 // Get pending submissions
                 const pendingQuery = query(
@@ -42,6 +65,10 @@ export default function AdminDashboard() {
                     where('status', '==', 'pending')
                 );
                 const pendingSnap = await getDocs(pendingQuery);
+                const filteredPending = pendingSnap.docs.filter(doc => {
+                    const data = doc.data();
+                    return isDemoMode ? data.isDemo === true : data.isDemo !== true;
+                });
 
                 // Get today's submissions
                 const today = new Date();
@@ -51,14 +78,18 @@ export default function AdminDashboard() {
                     where('createdAt', '>=', today)
                 );
                 const todaySnap = await getDocs(todayQuery);
+                const filteredToday = todaySnap.docs.filter(doc => {
+                    const data = doc.data();
+                    return isDemoMode ? data.isDemo === true : data.isDemo !== true;
+                });
 
                 setStats({
-                    products: productsSnap.size,
-                    prices: pricesSnap.size,
-                    supermarkets: supermarketsSnap.size,
-                    users: usersSnap.size,
-                    pendingSubmissions: pendingSnap.size,
-                    todaySubmissions: todaySnap.size
+                    products: filteredProducts.length,
+                    prices: filteredPrices.length,
+                    supermarkets: filteredSupermarkets.length,
+                    users: filteredUsers.length,
+                    pendingSubmissions: filteredPending.length,
+                    todaySubmissions: filteredToday.length
                 });
 
                 setLoading(false);
@@ -70,25 +101,33 @@ export default function AdminDashboard() {
 
         const fetchRecentActivity = async () => {
             try {
+                const isDemoMode = viewMode === 'demo';
+
                 // Fetch recently updated products (as a proxy for admin activity)
                 const productsQuery = query(
                     collection(db, 'products'),
                     orderBy('updatedAt', 'desc'),
-                    limit(10)
+                    limit(50) // Fetch more to ensure we have 10 after filtering
                 );
                 const productsSnap = await getDocs(productsQuery);
 
-                const activities = productsSnap.docs.map(doc => {
-                    const data = doc.data();
-                    const updatedAt = data.updatedAt?.toDate() || new Date();
-                    const timeAgo = getTimeAgo(updatedAt);
+                const activities = productsSnap.docs
+                    .filter(doc => {
+                        const data = doc.data();
+                        return isDemoMode ? data.isDemo === true : data.isDemo !== true;
+                    })
+                    .slice(0, 10) // Take only first 10 after filtering
+                    .map(doc => {
+                        const data = doc.data();
+                        const updatedAt = data.updatedAt?.toDate() || new Date();
+                        const timeAgo = getTimeAgo(updatedAt);
 
-                    return {
-                        action: `Updated product "${data.name}"`,
-                        time: timeAgo,
-                        timestamp: updatedAt
-                    };
-                });
+                        return {
+                            action: `Updated product "${data.name}"`,
+                            time: timeAgo,
+                            timestamp: updatedAt
+                        };
+                    });
 
                 setRecentActivity(activities);
             } catch (error) {
@@ -102,7 +141,7 @@ export default function AdminDashboard() {
 
         fetchStats();
         fetchRecentActivity();
-    }, []);
+    }, [viewMode]); // Re-fetch when viewMode changes
 
 
     const statCards = [

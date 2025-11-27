@@ -1,5 +1,16 @@
+/**
+ * ============================================================================
+ * File: App.jsx
+ * Developer: Dickson Otieno
+ * AI Assistant: Google Antigravity (Gemini 3 Pro)
+ * Purpose: Main React application component with routing configuration
+ * Date: 2025-11-28
+ * ============================================================================
+ */
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { AdminProvider } from './context/AdminContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Leaderboard from './pages/Leaderboard';
@@ -19,6 +30,7 @@ const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const SubmitPrice = lazy(() => import('./pages/SubmitPrice'));
 const Profile = lazy(() => import('./pages/Profile'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
+const DeveloperPortal = lazy(() => import('./pages/DeveloperPortal'));
 const MySubmissions = lazy(() => import('./pages/profile/MySubmissions'));
 
 // Admin Lazy Imports
@@ -30,8 +42,8 @@ const SupermarketsManagement = lazy(() => import('./pages/admin/SupermarketsMana
 const Submissions = lazy(() => import('./pages/admin/Submissions'));
 const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'));
 const DataManagement = lazy(() => import('./pages/admin/DataManagement'));
-const DataUtility = lazy(() => import('./pages/admin/DataUtility'));
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'));
+const APIManagement = lazy(() => import('./pages/admin/APIManagement'));
 
 import PrivateRoute from './components/PrivateRoute';
 import { Toaster } from 'react-hot-toast';
@@ -91,6 +103,11 @@ function App() {
                 <HowItWorks />
               </Suspense>
             } />
+            <Route path="/developers" element={
+              <Suspense fallback={<PageLoader />}>
+                <DeveloperPortal />
+              </Suspense>
+            } />
           </Route>
           <Route path="/login" element={<Login />} />
 
@@ -105,9 +122,11 @@ function App() {
 
           <Route path="/admin" element={
             <PrivateRoute>
-              <Suspense fallback={<PageLoader />}>
-                <AdminLayout />
-              </Suspense>
+              <AdminProvider>
+                <Suspense fallback={<PageLoader />}>
+                  <AdminLayout />
+                </Suspense>
+              </AdminProvider>
             </PrivateRoute>
           }>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
@@ -146,14 +165,14 @@ function App() {
                 <DataManagement />
               </Suspense>
             } />
-            <Route path="data-utility" element={
-              <Suspense fallback={<PageLoader />}>
-                <DataUtility />
-              </Suspense>
-            } />
             <Route path="profile" element={
               <Suspense fallback={<PageLoader />}>
                 <AdminProfile />
+              </Suspense>
+            } />
+            <Route path="api" element={
+              <Suspense fallback={<PageLoader />}>
+                <APIManagement />
               </Suspense>
             } />
           </Route>

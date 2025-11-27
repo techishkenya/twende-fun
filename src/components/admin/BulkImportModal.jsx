@@ -55,6 +55,11 @@ export default function BulkImportModal({ onClose, onImportSuccess }) {
                 return;
             }
 
+            if (!row.Barcode) {
+                validationErrors.push(`Row ${rowNum}: Missing Barcode (Required)`);
+                return;
+            }
+
             // Basic validation passed
             validData.push(row);
         });
@@ -225,6 +230,7 @@ export default function BulkImportModal({ onClose, onImportSuccess }) {
                                             <tr>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Barcode</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price (Est)</th>
                                             </tr>
                                         </thead>
@@ -233,6 +239,7 @@ export default function BulkImportModal({ onClose, onImportSuccess }) {
                                                 <tr key={i}>
                                                     <td className="px-4 py-2 text-sm text-gray-900">{row.Name}</td>
                                                     <td className="px-4 py-2 text-sm text-gray-500">{row.Category}</td>
+                                                    <td className="px-4 py-2 text-sm font-mono text-gray-600">{row.Barcode}</td>
                                                     <td className="px-4 py-2 text-sm text-gray-500">
                                                         {row[`${SUPERMARKETS[0].name} Price`] || '-'}
                                                     </td>

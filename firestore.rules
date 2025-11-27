@@ -37,19 +37,32 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
     
-    // Users: Users can read/update own data, Admins can read all
-    match /users/{userId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.auth.uid == userId;
-      allow update: if isAuth() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
-    }
-    
     // Submissions: Users create, Admins review
     match /submissions/{submission} {
       allow read: if isAuth();
       allow create: if isAuth();
       allow update, delete: if isAdmin();
+    }
+
+    // Product Submissions: Users create, Admins review
+    match /product_submissions/{submission} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+    
+    // Admin Access Logs: Admins create
+    match /admin_access_logs/{log} {
+      allow create: if isAuth();
+      allow read: if isAdmin();
+    }
+    
+    // Allow admins to read all users for stats
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow update: if isAuth() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
     }
   }
 }

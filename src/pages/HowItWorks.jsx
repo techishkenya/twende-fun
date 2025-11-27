@@ -4,7 +4,7 @@ import SEO from '../components/SEO';
 
 export default function HowItWorks() {
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="bg-gray-50">
             <SEO
                 title="How It Works - Community-Driven Price Tracking"
                 description="Learn how TRACKER KE helps you save money through community-driven price tracking. Join thousands of Kenyans sharing real-time supermarket prices."
