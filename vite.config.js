@@ -35,6 +35,32 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Firebase in separate chunk
+          if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
+            return 'firebase';
+          }
+          // Recharts and its dependencies in separate chunk
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/react-is')) {
+            return 'recharts';
+          }
+          // Core React libraries in vendor chunk
+          if (id.includes('node_modules/react') ||
+            id.includes('node_modules/react-dom') ||
+            id.includes('node_modules/react-router')) {
+            return 'vendor';
+          }
+          // Lucide icons in separate chunk
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons';
+          }
+        }
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

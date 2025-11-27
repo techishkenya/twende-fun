@@ -23,7 +23,7 @@ const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const ProductsManagement = lazy(() => import('./pages/admin/ProductsManagement'));
 const SupermarketsManagement = lazy(() => import('./pages/admin/SupermarketsManagement'));
-const SubmissionsManagement = lazy(() => import('./pages/admin/SubmissionsManagement'));
+const Submissions = lazy(() => import('./pages/admin/Submissions'));
 const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'));
 const DataUtility = lazy(() => import('./pages/admin/DataUtility'));
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'));
@@ -94,7 +94,7 @@ function App() {
             } />
             <Route path="submissions" element={
               <Suspense fallback={<PageLoader />}>
-                <SubmissionsManagement />
+                <Submissions />
               </Suspense>
             } />
             <Route path="moderation" element={

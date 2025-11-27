@@ -12,6 +12,15 @@ export default function SearchPage() {
     const [activeCategory, setActiveCategory] = useState('All');
     const { products, loading } = useProducts();
 
+    // Read query from URL on mount
+    useEffect(() => {
+        const queryParam = searchParams.get('q');
+        if (queryParam) {
+            const timer = setTimeout(() => setQuery(queryParam), 0);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
+
     // Read category from URL on mount
     useEffect(() => {
         const categoryParam = searchParams.get('category');

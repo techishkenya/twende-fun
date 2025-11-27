@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { ArrowLeft, Camera, MapPin, Search, Loader2, Upload } from 'lucide-react';
+import { ArrowLeft, Camera, MapPin, Search, Loader2, Upload, Plus } from 'lucide-react';
 import { SUPERMARKETS } from '../lib/types';
 import toast from 'react-hot-toast';
+import NewProductModal from '../components/NewProductModal';
 
 export default function SubmitPrice() {
     const { currentUser } = useAuth();
@@ -17,6 +18,7 @@ export default function SubmitPrice() {
     const [loading, setLoading] = useState(false);
     const [products, setProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showNewProductModal, setShowNewProductModal] = useState(false);
 
     // Form State
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -51,6 +53,28 @@ export default function SubmitPrice() {
     const handleProductSelect = (product) => {
         setSelectedProduct(product);
         setStep(2);
+    };
+
+    const handleNewProductSubmit = async (productData) => {
+        try {
+            await addDoc(collection(db, 'product_submissions'), {
+                userId: currentUser.uid,
+                userName: currentUser.displayName,
+                userEmail: currentUser.email,
+                productName: productData.productName,
+                category: productData.category,
+                newCategory: productData.isNewCategory ? productData.category : null,
+                imageUrl: productData.imageUrl,
+                status: 'pending',
+                createdAt: new Date()
+            });
+
+            toast.success('Product submitted for review! Admins will review it soon.');
+            setShowNewProductModal(false);
+        } catch (error) {
+            console.error('Error submitting product:', error);
+            toast.error('Failed to submit product');
+        }
     };
 
     const handleLocationClick = () => {
@@ -117,7 +141,34 @@ export default function SubmitPrice() {
         }
     };
 
-    if (!currentUser) return null; // Should be protected route
+    // Show login prompt if not authenticated
+    if (!currentUser) {
+        return (
+            <div className="min-h-screen bg-gray-50 pb-20 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+                    <div className="h-16 w-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Upload className="h-8 w-8 text-primary-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
+                    <p className="text-gray-600 mb-6">
+                        Please log in to submit prices and help the community
+                    </p>
+                    <button
+                        onClick={() => navigate('/profile')}
+                        className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl hover:bg-primary-700 transition-colors"
+                    >
+                        Go to Login
+                    </button>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-full mt-3 text-gray-600 font-medium py-3 hover:text-gray-900 transition-colors"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -147,6 +198,20 @@ export default function SubmitPrice() {
                         </div>
 
                         <div className="space-y-2">
+                            {/* Add New Product Button */}
+                            <button
+                                onClick={() => setShowNewProductModal(true)}
+                                className="w-full bg-primary-50 border border-primary-200 text-primary-700 p-3 rounded-xl flex items-center gap-3 hover:bg-primary-100 transition-colors"
+                            >
+                                <div className="h-12 w-12 bg-primary-200 rounded-lg flex items-center justify-center">
+                                    <Plus className="h-6 w-6" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="font-medium">Add New Product</h3>
+                                    <p className="text-xs text-primary-600">Product not listed? Submit it for review</p>
+                                </div>
+                            </button>
+
                             {filteredProducts.map(product => (
                                 <div
                                     key={product.id}
@@ -160,13 +225,6 @@ export default function SubmitPrice() {
                                     </div>
                                 </div>
                             ))}
-                            {filteredProducts.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">
-                                    No products found.
-                                    <br />
-                                    <span className="text-xs">(New product submission coming soon)</span>
-                                </div>
-                            )}
                         </div>
                     </div>
                 ) : (
@@ -265,6 +323,14 @@ export default function SubmitPrice() {
                     </form>
                 )}
             </div>
+
+            {/* New Product Modal */}
+            {showNewProductModal && (
+                <NewProductModal
+                    onClose={() => setShowNewProductModal(false)}
+                    onSubmit={handleNewProductSubmit}
+                />
+            )}
         </div>
     );
 }
