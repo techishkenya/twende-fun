@@ -22,8 +22,10 @@ export default function Layout() {
 
                 {/* Footer Links */}
                 <div className="py-8 text-center text-gray-400 text-xs bg-gray-50 border-t border-gray-100">
-                    <p>&copy; 2024 Twende. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Twende. All rights reserved.</p>
                     <div className="mt-2 space-x-3">
+                        <Link to="/how-it-works" className="hover:text-gray-600 transition-colors">How It Works</Link>
+                        <span>•</span>
                         <Link to="/help" className="hover:text-gray-600 transition-colors">Privacy</Link>
                         <span>•</span>
                         <Link to="/help" className="hover:text-gray-600 transition-colors">Terms</Link>

@@ -1,14 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
-import Home from './pages/Home';
 import Login from './pages/Login';
-import ProductDetail from './pages/ProductDetail';
-import SubmitPrice from './pages/SubmitPrice';
 import Leaderboard from './pages/Leaderboard';
-import Profile from './pages/Profile';
-import MySubmissions from './pages/profile/MySubmissions';
-import SearchPage from './pages/Search';
 import SubmissionModeration from './pages/admin/SubmissionModeration';
 import EditProfile from './pages/EditProfile';
 import Achievements from './pages/Achievements';
@@ -18,6 +12,16 @@ import SupermarketTrending from './pages/SupermarketTrending';
 import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
+// Lazy Imports
+const Home = lazy(() => import('./pages/Home'));
+const SearchPage = lazy(() => import('./pages/Search'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const SubmitPrice = lazy(() => import('./pages/SubmitPrice'));
+const Profile = lazy(() => import('./pages/Profile'));
+const HowItWorks = lazy(() => import('./pages/HowItWorks'));
+const MySubmissions = lazy(() => import('./pages/profile/MySubmissions'));
+
+// Admin Lazy Imports
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -25,8 +29,10 @@ const ProductsManagement = lazy(() => import('./pages/admin/ProductsManagement')
 const SupermarketsManagement = lazy(() => import('./pages/admin/SupermarketsManagement'));
 const Submissions = lazy(() => import('./pages/admin/Submissions'));
 const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'));
+const DataManagement = lazy(() => import('./pages/admin/DataManagement'));
 const DataUtility = lazy(() => import('./pages/admin/DataUtility'));
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'));
+
 import PrivateRoute from './components/PrivateRoute';
 
 const PageLoader = () => (
@@ -46,17 +52,46 @@ function App() {
         <CookieConsent />
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/product/:category/:id" element={<ProductDetail />} />
-            <Route path="/search" element={<SearchPage />} />
+            <Route path="/" element={
+              <Suspense fallback={<PageLoader />}>
+                <Home />
+              </Suspense>
+            } />
+            <Route path="/product/:category/:id" element={
+              <Suspense fallback={<PageLoader />}>
+                <ProductDetail />
+              </Suspense>
+            } />
+            <Route path="/search" element={
+              <Suspense fallback={<PageLoader />}>
+                <Search />
+              </Suspense>
+            } />
             <Route path="/supermarket/:id" element={<SupermarketTrending />} />
-            <Route path="/add-price" element={<SubmitPrice />} />
+            <Route path="/add-price" element={
+              <Suspense fallback={<PageLoader />}>
+                <SubmitPrice />
+              </Suspense>
+            } />
             <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/submissions" element={<MySubmissions />} />
+            <Route path="/profile" element={
+              <Suspense fallback={<PageLoader />}>
+                <Profile />
+              </Suspense>
+            } />
+            <Route path="/profile/submissions" element={
+              <Suspense fallback={<PageLoader />}>
+                <MySubmissions />
+              </Suspense>
+            } />
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/profile/achievements" element={<Achievements />} />
             <Route path="/help" element={<HelpSupport />} />
+            <Route path="/how-it-works" element={
+              <Suspense fallback={<PageLoader />}>
+                <HowItWorks />
+              </Suspense>
+            } />
           </Route>
           <Route path="/login" element={<Login />} />
 
@@ -105,6 +140,11 @@ function App() {
             <Route path="users" element={
               <Suspense fallback={<PageLoader />}>
                 <UsersManagement />
+              </Suspense>
+            } />
+            <Route path="data-management" element={
+              <Suspense fallback={<PageLoader />}>
+                <DataManagement />
               </Suspense>
             } />
             <Route path="data-utility" element={

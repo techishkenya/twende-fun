@@ -140,6 +140,15 @@ export default function AdminLayout() {
                     {/* User Info & Logout */}
                     <div className="p-4 border-t space-y-2">
                         <Link
+                            to="/admin/data-management"
+                            onClick={() => setSidebarOpen(false)}
+                            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Shield className="h-4 w-4" />
+                            <span>Data Management</span>
+                        </Link>
+
+                        <Link
                             to="/admin/data-utility"
                             onClick={() => setSidebarOpen(false)}
                             className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
