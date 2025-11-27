@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Cookie, X } from 'lucide-react';
+import { Cookie } from 'lucide-react';
 
 export default function CookieConsent() {
     const [isVisible, setIsVisible] = useState(false);
@@ -21,7 +21,7 @@ export default function CookieConsent() {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 animate-in slide-in-from-bottom duration-500">
+        <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 md:p-6 animate-in slide-in-from-bottom duration-500">
             <div className="max-w-4xl mx-auto bg-gray-900/95 backdrop-blur-md text-white p-4 md:p-5 rounded-2xl shadow-2xl flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 border border-white/10">
                 <div className="p-3 bg-white/10 rounded-xl shrink-0">
                     <Cookie className="h-6 w-6 text-yellow-400" />

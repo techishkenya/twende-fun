@@ -4,7 +4,7 @@ import clsx from 'clsx';
 
 export default function Layout() {
     const location = useLocation();
-    // const { currentUser } = useAuth();
+
 
     const navItems = [
         { icon: Home, label: 'Home', path: '/' },
@@ -14,14 +14,14 @@ export default function Layout() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+        <div className="min-h-screen bg-gray-50 pb-28">
             <main className="max-w-md mx-auto md:max-w-4xl lg:max-w-6xl xl:max-w-7xl min-h-screen bg-white md:shadow-xl overflow-hidden flex flex-col">
                 <div className="flex-1">
                     <Outlet />
                 </div>
 
                 {/* Footer Links */}
-                <div className="py-8 pb-24 md:pb-8 text-center text-gray-400 text-xs bg-gray-50 border-t border-gray-100">
+                <div className="py-8 pb-8 text-center text-gray-400 text-xs bg-gray-50 border-t border-gray-100">
                     <p>&copy; {new Date().getFullYear()} Twende. All rights reserved.</p>
                     <div className="mt-2 space-x-3">
                         <Link to="/how-it-works" className="hover:text-gray-600 transition-colors">How It Works</Link>
