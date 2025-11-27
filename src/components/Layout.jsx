@@ -1,11 +1,10 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, PlusCircle, User, Search } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
 export default function Layout() {
     const location = useLocation();
-    const { currentUser } = useAuth();
+    // const { currentUser } = useAuth();
 
     const navItems = [
         { icon: Home, label: 'Home', path: '/' },

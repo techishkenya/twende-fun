@@ -12,30 +12,16 @@ export default function SupermarketTrending() {
     const [showAllLocations, setShowAllLocations] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
 
-    // Find the supermarket
-    const supermarket = SUPERMARKETS.find(s => s.id === id);
-
-    if (!supermarket) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Supermarket Not Found</h1>
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700"
-                    >
-                        Go Back
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     const [bestPriceProducts, setBestPriceProducts] = useState([]);
     const [categoryStats, setCategoryStats] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Find the supermarket
+    const supermarket = SUPERMARKETS.find(s => s.id === id);
+
     useEffect(() => {
+        if (!supermarket) return;
+
         const fetchBestPrices = async () => {
             try {
                 // Fetch all active products
@@ -105,7 +91,25 @@ export default function SupermarketTrending() {
         };
 
         fetchBestPrices();
-    }, [id]);
+    }, [id, supermarket]);
+
+    if (!supermarket) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Supermarket Not Found</h1>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+
 
     const displayedLocations = showAllLocations ? supermarket.locations : supermarket.locations.slice(0, 6);
 

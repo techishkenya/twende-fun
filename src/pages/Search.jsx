@@ -16,7 +16,8 @@ export default function SearchPage() {
     useEffect(() => {
         const categoryParam = searchParams.get('category');
         if (categoryParam && CATEGORIES.includes(categoryParam)) {
-            setActiveCategory(categoryParam);
+            const timer = setTimeout(() => setActiveCategory(categoryParam), 0);
+            return () => clearTimeout(timer);
         }
     }, [searchParams]);
 

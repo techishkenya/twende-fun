@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber a
 
 const AuthContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     return useContext(AuthContext);
 }
@@ -15,8 +16,8 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         if (!auth) {
             // Mock mode: stop loading immediately
-            setLoading(false);
-            return;
+            const timer = setTimeout(() => setLoading(false), 0);
+            return () => clearTimeout(timer);
         }
 
         const unsubscribe = onAuthStateChanged(auth, (user) => {

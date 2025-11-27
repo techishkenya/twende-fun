@@ -17,83 +17,6 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [recentActivity, setRecentActivity] = useState([]);
 
-    useEffect(() => {
-        fetchStats();
-        fetchRecentActivity();
-    }, []);
-
-    const fetchStats = async () => {
-        try {
-            // Get counts from collections
-            const productsSnap = await getDocs(collection(db, 'products'));
-            const pricesSnap = await getDocs(collection(db, 'prices'));
-            const supermarketsSnap = await getDocs(collection(db, 'supermarkets'));
-            const usersSnap = await getDocs(collection(db, 'users'));
-
-            // Get pending submissions
-            const pendingQuery = query(
-                collection(db, 'submissions'),
-                where('status', '==', 'pending')
-            );
-            const pendingSnap = await getDocs(pendingQuery);
-
-            // Get today's submissions
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const todayQuery = query(
-                collection(db, 'submissions'),
-                where('createdAt', '>=', today)
-            );
-            const todaySnap = await getDocs(todayQuery);
-
-            setStats({
-                products: productsSnap.size,
-                prices: pricesSnap.size,
-                supermarkets: supermarketsSnap.size,
-                users: usersSnap.size,
-                pendingSubmissions: pendingSnap.size,
-                todaySubmissions: todaySnap.size
-            });
-
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-            setLoading(false);
-        }
-    };
-
-    const fetchRecentActivity = async () => {
-        try {
-            // Fetch recently updated products (as a proxy for admin activity)
-            const productsQuery = query(
-                collection(db, 'products'),
-                orderBy('updatedAt', 'desc'),
-                limit(10)
-            );
-            const productsSnap = await getDocs(productsQuery);
-
-            const activities = productsSnap.docs.map(doc => {
-                const data = doc.data();
-                const updatedAt = data.updatedAt?.toDate() || new Date();
-                const timeAgo = getTimeAgo(updatedAt);
-
-                return {
-                    action: `Updated product "${data.name}"`,
-                    time: timeAgo,
-                    timestamp: updatedAt
-                };
-            });
-
-            setRecentActivity(activities);
-        } catch (error) {
-            console.error('Error fetching activity:', error);
-            // Fallback to mock data if no updatedAt field exists
-            setRecentActivity([
-                { action: 'System initialized', time: 'Just now', timestamp: new Date() }
-            ]);
-        }
-    };
-
     const getTimeAgo = (date) => {
         const seconds = Math.floor((new Date() - date) / 1000);
 
@@ -104,26 +27,84 @@ export default function AdminDashboard() {
         return date.toLocaleDateString();
     };
 
-    const quickActions = [
-        {
-            label: 'Add New Product',
-            icon: Plus,
-            color: 'bg-blue-50 text-blue-600',
-            onClick: () => navigate('/admin/products', { state: { openAddModal: true } })
-        },
-        {
-            label: 'Update Prices',
-            icon: Edit,
-            color: 'bg-green-50 text-green-600',
-            onClick: () => navigate('/admin/products')
-        },
-        {
-            label: 'Review Submissions',
-            icon: FileCheck,
-            color: 'bg-yellow-50 text-yellow-600',
-            onClick: () => navigate('/admin/submissions')
-        }
-    ];
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                // Get counts from collections
+                const productsSnap = await getDocs(collection(db, 'products'));
+                const pricesSnap = await getDocs(collection(db, 'prices'));
+                const supermarketsSnap = await getDocs(collection(db, 'supermarkets'));
+                const usersSnap = await getDocs(collection(db, 'users'));
+
+                // Get pending submissions
+                const pendingQuery = query(
+                    collection(db, 'submissions'),
+                    where('status', '==', 'pending')
+                );
+                const pendingSnap = await getDocs(pendingQuery);
+
+                // Get today's submissions
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayQuery = query(
+                    collection(db, 'submissions'),
+                    where('createdAt', '>=', today)
+                );
+                const todaySnap = await getDocs(todayQuery);
+
+                setStats({
+                    products: productsSnap.size,
+                    prices: pricesSnap.size,
+                    supermarkets: supermarketsSnap.size,
+                    users: usersSnap.size,
+                    pendingSubmissions: pendingSnap.size,
+                    todaySubmissions: todaySnap.size
+                });
+
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                setLoading(false);
+            }
+        };
+
+        const fetchRecentActivity = async () => {
+            try {
+                // Fetch recently updated products (as a proxy for admin activity)
+                const productsQuery = query(
+                    collection(db, 'products'),
+                    orderBy('updatedAt', 'desc'),
+                    limit(10)
+                );
+                const productsSnap = await getDocs(productsQuery);
+
+                const activities = productsSnap.docs.map(doc => {
+                    const data = doc.data();
+                    const updatedAt = data.updatedAt?.toDate() || new Date();
+                    const timeAgo = getTimeAgo(updatedAt);
+
+                    return {
+                        action: `Updated product "${data.name}"`,
+                        time: timeAgo,
+                        timestamp: updatedAt
+                    };
+                });
+
+                setRecentActivity(activities);
+            } catch (error) {
+                console.error('Error fetching activity:', error);
+                // Fallback to mock data if no updatedAt field exists
+                setRecentActivity([
+                    { action: 'System initialized', time: 'Just now', timestamp: new Date() }
+                ]);
+            }
+        };
+
+        fetchStats();
+        fetchRecentActivity();
+    }, []);
+
+
     const statCards = [
         {
             label: 'Total Products',

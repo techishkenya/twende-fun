@@ -5,10 +5,12 @@ import App from './App.jsx'
 
 import ErrorBoundary from './components/ErrorBoundary'
 
+import { HelmetProvider } from 'react-helmet-async';
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ErrorBoundary>
+    <HelmetProvider>
       <App />
-    </ErrorBoundary>
+    </HelmetProvider>
   </StrictMode>,
 )

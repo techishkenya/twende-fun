@@ -12,23 +12,23 @@ export default function UsersManagement() {
     const [showAddUser, setShowAddUser] = useState(false);
 
     useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const usersList = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setUsers(usersList);
+                setLoading(false);
+            } catch {
+                // console.error('Error fetching users:', error);
+                setLoading(false);
+            }
+        };
+
         fetchUsers();
     }, []);
-
-    const fetchUsers = async () => {
-        try {
-            const querySnapshot = await getDocs(collection(db, 'users'));
-            const usersList = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setUsers(usersList);
-            setLoading(false);
-        } catch (error) {
-            // console.error('Error fetching users:', error);
-            setLoading(false);
-        }
-    };
 
     const filteredUsers = users.filter(user =>
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,16 +39,20 @@ export default function UsersManagement() {
         try {
             // Generate a simple user ID
             const userId = `user_${Date.now()}`;
-            await setDoc(doc(db, 'users', userId), {
+            const newUser = {
                 ...userData,
                 createdAt: new Date(),
                 points: 0,
                 createdBy: currentUser.uid,
                 createdByEmail: currentUser.email
-            });
-            fetchUsers();
+            };
+
+            await setDoc(doc(db, 'users', userId), newUser);
+
+            // Manually update state
+            setUsers(prev => [...prev, { id: userId, ...newUser }]);
             setShowAddUser(false);
-        } catch (error) {
+        } catch {
             // console.error('Error adding user:', error);
             alert('Failed to add user');
         }
@@ -65,7 +69,7 @@ export default function UsersManagement() {
                     updatedByEmail: currentUser.email
                 });
                 setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-            } catch (error) {
+            } catch {
                 // console.error('Error updating user role:', error);
                 alert('Failed to update user role');
             }

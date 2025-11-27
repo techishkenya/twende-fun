@@ -14,23 +14,23 @@ export default function SubmissionsManagement() {
     const { supermarkets } = useSupermarkets();
 
     useEffect(() => {
+        const fetchSubmissions = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'submissions'));
+                const submissionsList = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setSubmissions(submissionsList);
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching submissions:', error);
+                setLoading(false);
+            }
+        };
+
         fetchSubmissions();
     }, []);
-
-    const fetchSubmissions = async () => {
-        try {
-            const querySnapshot = await getDocs(collection(db, 'submissions'));
-            const submissionsList = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setSubmissions(submissionsList);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching submissions:', error);
-            setLoading(false);
-        }
-    };
 
     const filteredSubmissions = submissions.filter(submission => {
         const product = products.find(p => p.id === submission.productId);
@@ -140,8 +140,8 @@ export default function SubmissionsManagement() {
                             key={status}
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterStatus === status
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -203,8 +203,8 @@ export default function SubmissionsManagement() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${submission.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                    submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
+                                                submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {submission.status || 'pending'}
                                             </span>

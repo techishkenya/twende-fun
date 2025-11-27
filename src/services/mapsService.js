@@ -44,7 +44,7 @@ export const searchSupermarketLocations = async (supermarketName) => {
             fields: ['name', 'formatted_address']
         };
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             service.textSearch(request, (results, status) => {
                 if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
                     const locations = results.map(place => {

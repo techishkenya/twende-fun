@@ -2,9 +2,12 @@ import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { ArrowLeft, Share2, AlertCircle, TrendingUp, MapPin } from 'lucide-react';
+import { ArrowLeft, AlertCircle, TrendingUp, MapPin } from 'lucide-react';
 import { useProduct, usePrices, getCheapestPrice, getSupermarketColor } from '../hooks/useFirestore';
+import { formatDistanceToNow } from 'date-fns';
 import { SUPERMARKETS } from '../lib/types';
+import SEO from '../components/SEO';
+import ShareButton from '../components/ShareButton';
 
 export default function ProductDetail() {
     const { id } = useParams();
@@ -29,7 +32,7 @@ export default function ProductDetail() {
         }
     }, [id]);
 
-    if (productLoading) {
+    if (productLoading || pricesLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -39,22 +42,19 @@ export default function ProductDetail() {
 
     if (productError || !product) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h2>
-                <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
-                <button
-                    onClick={() => navigate('/')}
-                    className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700"
-                >
-                    Go Home
-                </button>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h2>
+                    <button onClick={() => navigate('/')} className="text-primary-600 hover:text-primary-700">
+                        Go Home
+                    </button>
+                </div>
             </div>
         );
     }
 
     // Get cheapest price
-    const cheapest = prices ? getCheapestPrice(prices) : null;
+    const cheapest = getCheapestPrice(prices);
     const cheapestPrice = cheapest?.price || 0;
     const cheapestSupermarket = cheapest?.supermarket || '';
 
@@ -69,24 +69,7 @@ export default function ProductDetail() {
     const cheapestSupermarketObj = SUPERMARKETS.find(s => s.id === cheapestSupermarket);
     const cheapestSupermarketName = cheapestSupermarketObj?.name || 'a supermarket';
 
-    const handleShare = async () => {
-        const shareData = {
-            title: `Twende - ${product.name}`,
-            text: `Hey, this item "${product.name}" is cheapest at ${cheapestSupermarketName}!`,
-            url: window.location.href
-        };
 
-        try {
-            if (navigator.share) {
-                await navigator.share(shareData);
-            } else {
-                await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-                alert('Link copied to clipboard!');
-            }
-        } catch (err) {
-            console.error('Error sharing:', err);
-        }
-    };
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
@@ -99,12 +82,11 @@ export default function ProductDetail() {
                     >
                         <ArrowLeft className="h-6 w-6 text-gray-900" />
                     </button>
-                    <button
-                        onClick={handleShare}
-                        className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
-                    >
-                        <Share2 className="h-6 w-6 text-gray-900" />
-                    </button>
+                    <ShareButton
+                        product={product}
+                        price={cheapestPrice}
+                        supermarket={cheapestSupermarketName}
+                    />
                 </div>
 
                 {/* Product Image */}
@@ -195,9 +177,14 @@ export default function ProductDetail() {
                                             </div>
                                         </Link>
                                         <div className="text-right">
-                                            <p className={`text-2xl font-bold ${isCheapest ? `text-${colorClass}` : 'text-gray-900'}`}>
+                                            <p className={`text-xl font-bold ${isCheapest ? `text-${colorClass}` : 'text-gray-900'}`}>
                                                 KES {priceData.price}
                                             </p>
+                                            {priceData.updatedAt && (
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    {formatDistanceToNow(priceData.updatedAt.toDate(), { addSuffix: true })}
+                                                </p>
+                                            )}
                                             {!isCheapest && cheapestPrice > 0 && (
                                                 <p className="text-xs text-red-600">
                                                     +KES {priceData.price - cheapestPrice} more

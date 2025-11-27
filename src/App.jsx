@@ -4,12 +4,13 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import ProductDetail from './pages/ProductDetail';
-import AddPrice from './pages/AddPrice';
+import SubmitPrice from './pages/SubmitPrice';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
+import MySubmissions from './pages/profile/MySubmissions';
 import SearchPage from './pages/Search';
+import SubmissionModeration from './pages/admin/SubmissionModeration';
 import EditProfile from './pages/EditProfile';
-import Submissions from './pages/Submissions';
 import Achievements from './pages/Achievements';
 import HelpSupport from './pages/HelpSupport';
 import SupermarketTrending from './pages/SupermarketTrending';
@@ -34,23 +35,27 @@ const PageLoader = () => (
   </div>
 );
 
+import { Toaster } from 'react-hot-toast';
+import CookieConsent from './components/auth/CookieConsent';
+
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <Toaster position="top-center" reverseOrder={false} />
+        <CookieConsent />
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/product/:category/:id" element={<ProductDetail />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/supermarket/:id" element={<SupermarketTrending />} />
-            <Route path="/add-price" element={<AddPrice />} />
+            <Route path="/add-price" element={<SubmitPrice />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/submissions" element={<MySubmissions />} />
             <Route path="/profile/edit" element={<EditProfile />} />
-            <Route path="/profile/submissions" element={<Submissions />} />
             <Route path="/profile/achievements" element={<Achievements />} />
-            <Route path="/profile/stats" element={<Submissions />} />
             <Route path="/help" element={<HelpSupport />} />
           </Route>
           <Route path="/login" element={<Login />} />
@@ -90,6 +95,11 @@ function App() {
             <Route path="submissions" element={
               <Suspense fallback={<PageLoader />}>
                 <SubmissionsManagement />
+              </Suspense>
+            } />
+            <Route path="moderation" element={
+              <Suspense fallback={<PageLoader />}>
+                <SubmissionModeration />
               </Suspense>
             } />
             <Route path="users" element={

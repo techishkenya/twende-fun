@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, addDoc, writeBatch, doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { FMCG_PRODUCTS } from './products';
 import { SUPERMARKETS } from './types';
 
@@ -122,40 +122,9 @@ export async function initializeFirestore() {
     }
 }
 
-/**
- * Generate sample prices for testing
- */
-function generateSamplePrices(count) {
-    const prices = [];
-    const supermarketIds = ['carrefour', 'naivas', 'quickmart', 'magunas'];
 
-    for (let i = 0; i < count; i++) {
-        const product = FMCG_PRODUCTS[Math.floor(Math.random() * FMCG_PRODUCTS.length)];
-        const supermarketId = supermarketIds[Math.floor(Math.random() * supermarketIds.length)];
-        const basePrice = Math.floor(Math.random() * 500) + 50;
 
-        prices.push({
-            productId: product.id,
-            supermarketId: supermarketId,
-            price: basePrice,
-            location: getRandomLocation(supermarketId),
-            timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random time in last 7 days
-            userId: 'admin',
-            photoUrl: null
-        });
-    }
 
-    return prices;
-}
-
-/**
- * Get random location for a supermarket
- */
-function getRandomLocation(supermarketId) {
-    const supermarket = SUPERMARKETS.find(s => s.id === supermarketId);
-    if (!supermarket || !supermarket.locations) return 'Nairobi';
-    return supermarket.locations[Math.floor(Math.random() * supermarket.locations.length)];
-}
 
 /**
  * Clear all data from Firestore collections
@@ -164,7 +133,7 @@ function getRandomLocation(supermarketId) {
 export async function clearFirestore() {
     try {
         console.log('⚠️  Clearing Firestore...');
-        const collections = ['supermarkets', 'products', 'prices', 'users', 'submissions'];
+        // const collections = ['supermarkets', 'products', 'prices', 'users', 'submissions'];
 
         // Note: In production, you'd want to use the Firebase Admin SDK for this
         // as it's more efficient. This is a simplified version for development.

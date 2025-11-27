@@ -1,13 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package, Star, Eye, ArrowUpDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Save, TrendingUp, ArrowLeft, Grid3x3, Package, Star, Eye, ArrowUpDown, FileSpreadsheet } from 'lucide-react';
 import { CATEGORIES as DEFAULT_CATEGORIES } from '../../lib/types';
 import { getCheapestPrice, getSupermarketColor, useSupermarkets } from '../../hooks/useFirestore';
 import { getSupermarketInitials } from '../../lib/stringUtils';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
+import BulkImportModal from '../../components/admin/BulkImportModal';
 
 export default function ProductsManagement() {
+    const { currentUser } = useAuth();
     const location = useLocation();
     const [products, setProducts] = useState([]);
     const [prices, setPrices] = useState({});
@@ -25,9 +29,10 @@ export default function ProductsManagement() {
     const [editingPrices, setEditingPrices] = useState({});
     const [showAddCategory, setShowAddCategory] = useState(false);
     const [showAddProduct, setShowAddProduct] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     // Fetch supermarkets dynamically
-    const { supermarkets, loading: supermarketsLoading } = useSupermarkets();
+    const { supermarkets } = useSupermarkets();
 
     // Handle navigation state for Quick Actions
     useEffect(() => {
@@ -68,7 +73,7 @@ export default function ProductsManagement() {
                 }));
                 setCategories(catsList);
             }
-        } catch (error) {
+        } catch {
             // console.error('Error fetching categories:', error);
             // Fallback on error
             setCategories(DEFAULT_CATEGORIES.map(cat => ({ name: cat, productCount: 0 })));
@@ -99,7 +104,7 @@ export default function ProductsManagement() {
             });
             setPrices(pricesMap);
 
-        } catch (error) {
+        } catch {
             // console.error('Error fetching products/prices:', error);
         } finally {
             setProductsLoading(false);
@@ -188,9 +193,8 @@ export default function ProductsManagement() {
             if (!categories.some(c => c.id === categoryId)) {
                 setCategories([...categories, { id: categoryId, name: categoryName, productCount: 0 }]);
             }
-        } catch (error) {
-            console.error('Error adding category:', error);
-            alert('Failed to add category');
+        } catch {
+            toast.error('Failed to add category');
         } finally {
             setShowAddCategory(false);
         }
@@ -199,7 +203,7 @@ export default function ProductsManagement() {
     const handleDeleteCategory = async (categoryId, categoryName) => {
         const productsInCategory = products.filter(p => p.category === categoryName);
         if (productsInCategory.length > 0) {
-            alert(`Cannot delete category with ${productsInCategory.length} products. Please delete or move the products first.`);
+            toast.error(`Cannot delete category with ${productsInCategory.length} products. Please delete or move the products first.`);
             return;
         }
 
@@ -207,9 +211,9 @@ export default function ProductsManagement() {
             try {
                 await deleteDoc(doc(db, 'categories', categoryId));
                 setCategories(categories.filter(c => c.id !== categoryId));
-            } catch (error) {
+            } catch {
                 // console.error('Error deleting category:', error);
-                alert('Failed to delete category');
+                toast.error('Failed to delete category');
             }
         }
     };
@@ -249,9 +253,9 @@ export default function ProductsManagement() {
             setProducts([...products, { id: productId, ...productData }]);
             setPrices({ ...prices, [productId]: initialPrices });
             setShowAddProduct(false);
-        } catch (error) {
+        } catch {
             // console.error('Error adding product:', error);
-            alert('Failed to add product');
+            toast.error('Failed to add product');
         }
     };
 
@@ -264,9 +268,9 @@ export default function ProductsManagement() {
                 const newPrices = { ...prices };
                 delete newPrices[productId];
                 setPrices(newPrices);
-            } catch (error) {
+            } catch {
                 // console.error('Error deleting product:', error);
-                alert('Failed to delete product');
+                toast.error('Failed to delete product');
             }
         }
     };
@@ -281,9 +285,9 @@ export default function ProductsManagement() {
             });
             setProducts(products.map(p => p.id === productId ? { ...p, ...updatedData } : p));
             setEditingProduct(null);
-        } catch (error) {
+        } catch {
             // console.error('Error updating product:', error);
-            alert('Failed to update product');
+            toast.error('Failed to update product');
         }
     };
 
@@ -330,10 +334,10 @@ export default function ProductsManagement() {
             delete newEditingPrices[productId];
             setEditingPrices(newEditingPrices);
 
-            alert('Prices updated successfully!');
-        } catch (error) {
+            toast.success('Prices updated successfully!');
+        } catch {
             // console.error('Error updating prices:', error);
-            alert('Error updating prices');
+            toast.error('Error updating prices');
         }
     };
 
@@ -345,9 +349,9 @@ export default function ProductsManagement() {
             setProducts(products.map(p =>
                 p.id === productId ? { ...p, isTrending: !currentStatus } : p
             ));
-        } catch (error) {
+        } catch {
             // console.error('Error updating trending status:', error);
-            alert('Failed to update trending status');
+            toast.error('Failed to update trending status');
         }
     };
 
@@ -366,6 +370,13 @@ export default function ProductsManagement() {
                 </div>
                 {!selectedCategory && (
                     <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowImportModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                        >
+                            <FileSpreadsheet className="h-5 w-5" />
+                            Import Excel
+                        </button>
                         <button
                             onClick={() => setShowAddCategory(true)}
                             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
@@ -740,6 +751,16 @@ export default function ProductsManagement() {
                     category={selectedCategory}
                     onClose={() => setShowAddProduct(false)}
                     onSave={handleAddProduct}
+                />
+            )}
+            {showImportModal && (
+                <BulkImportModal
+                    onClose={() => setShowImportModal(false)}
+                    onImportSuccess={() => {
+                        setShowImportModal(false);
+                        fetchCategories(); // Refresh categories
+                        fetchProductsAndPrices(); // Refresh products
+                    }}
                 />
             )}
         </div>

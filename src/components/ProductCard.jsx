@@ -2,7 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { usePrices, getCheapestPrice } from '../hooks/useFirestore';
 import { SUPERMARKETS } from '../lib/types';
 import { getSupermarketBranding } from '../lib/supermarketUtils';
+import { slugify } from '../lib/stringUtils';
 import { TrendingUp } from 'lucide-react';
+import ShareButton from './ShareButton';
 
 export default function ProductCard({ product }) {
     const navigate = useNavigate();
@@ -19,11 +21,20 @@ export default function ProductCard({ product }) {
 
     return (
         <div
-            onClick={() => navigate(`/product/${product.id}`)}
+            onClick={() => navigate(`/product/${slugify(product.category)}/${product.id}`)}
             className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group relative"
         >
             {/* Product Image */}
             <div className="aspect-square bg-gray-50 flex items-center justify-center p-4 group-hover:bg-gray-100 transition-colors relative">
+                {/* Share Button - Top Left */}
+                <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ShareButton
+                        product={product}
+                        price={cheapestPrice}
+                        supermarket={supermarketName}
+                    />
+                </div>
+
                 {cheapestPrice > 0 && (
                     <div className={`absolute top-2 right-2 ${colors.bg} text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm z-10`}>
                         <TrendingUp className="h-3 w-3" />

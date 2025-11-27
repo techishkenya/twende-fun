@@ -1,16 +1,17 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ScanLine, Bell, TrendingUp, ShoppingBag } from 'lucide-react';
 import { useSupermarkets } from '../hooks/useFirestore';
 import SearchBar from '../components/SearchBar';
 import CategoryGrid from '../components/CategoryGrid';
 import SupermarketCard from '../components/SupermarketCard';
+import SEO from '../components/SEO';
 
 export default function Home() {
-    const [searchQuery, setSearchQuery] = useState('');
+
     const { supermarkets, loading: supermarketsLoading } = useSupermarkets();
     return (
         <div className="pb-8">
+            <SEO />
             {/* Header */}
             <header className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white p-6 md:p-8 lg:p-10 pb-12 md:pb-16 rounded-b-[2.5rem] shadow-lg">
                 <div className="flex justify-between items-center mb-6">

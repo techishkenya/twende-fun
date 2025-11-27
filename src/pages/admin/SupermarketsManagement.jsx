@@ -13,23 +13,23 @@ export default function SupermarketsManagement() {
     const [editingSupermarket, setEditingSupermarket] = useState(null);
 
     useEffect(() => {
+        const fetchSupermarkets = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'supermarkets'));
+                const supermarketsList = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setSupermarkets(supermarketsList);
+                setLoading(false);
+            } catch {
+                // console.error('Error fetching supermarkets:', error);
+                setLoading(false);
+            }
+        };
+
         fetchSupermarkets();
     }, []);
-
-    const fetchSupermarkets = async () => {
-        try {
-            const querySnapshot = await getDocs(collection(db, 'supermarkets'));
-            const supermarketsList = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setSupermarkets(supermarketsList);
-            setLoading(false);
-        } catch (error) {
-            // console.error('Error fetching supermarkets:', error);
-            setLoading(false);
-        }
-    };
 
     const filteredSupermarkets = useMemo(() => {
         return supermarkets.filter(supermarket =>
@@ -42,7 +42,7 @@ export default function SupermarketsManagement() {
             try {
                 await deleteDoc(doc(db, 'supermarkets', supermarketId));
                 setSupermarkets(supermarkets.filter(s => s.id !== supermarketId));
-            } catch (error) {
+            } catch {
                 // console.error('Error deleting supermarket:', error);
                 alert('Failed to delete supermarket');
             }
@@ -69,7 +69,7 @@ export default function SupermarketsManagement() {
                 setSupermarkets([...supermarkets, { id: docRef.id, ...supermarketData }]);
                 setShowAddModal(false);
             }
-        } catch (error) {
+        } catch {
             // console.error('Error saving supermarket:', error);
             alert('Failed to save supermarket');
         }
@@ -224,7 +224,7 @@ function SupermarketModal({ supermarket, onClose, onSave }) {
             } else {
                 alert('No locations found. Please ensure the Google Maps API Key is configured.');
             }
-        } catch (error) {
+        } catch {
             // console.error('Error fetching locations:', error);
             alert('Failed to fetch locations');
         } finally {
