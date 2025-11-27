@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, updateDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
-import { Check, X, Package, Loader2 } from 'lucide-react';
+import { Check, X, Package, Loader2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ProductSubmissions() {
     const { currentUser } = useAuth();
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('pending');
 
     useEffect(() => {
         const fetchSubmissions = async () => {
@@ -29,13 +31,20 @@ export default function ProductSubmissions() {
         fetchSubmissions();
     }, []);
 
+    const filteredSubmissions = submissions.filter(submission => {
+        const matchesSearch = submission.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            submission.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            submission.userName?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === 'all' || submission.status === filterStatus;
+
+        return matchesSearch && matchesStatus;
+    });
+
     const handleApprove = async (submission) => {
         try {
-            // Generate product ID
             const timestamp = new Date().getTime();
             const productId = submission.productName.toLowerCase().replace(/\s+/g, '-') + '-' + timestamp;
 
-            // 1. Create new category if needed
             if (submission.newCategory) {
                 const categoryId = submission.newCategory.toLowerCase().replace(/\s+/g, '-');
                 await setDoc(doc(db, 'categories', categoryId), {
@@ -45,7 +54,6 @@ export default function ProductSubmissions() {
                 });
             }
 
-            // 2. Create product document
             await setDoc(doc(db, 'products', productId), {
                 name: submission.productName,
                 category: submission.category,
@@ -56,14 +64,12 @@ export default function ProductSubmissions() {
                 updatedAt: new Date()
             });
 
-            // 3. Update submission status
             await updateDoc(doc(db, 'product_submissions', submission.id), {
                 status: 'approved',
                 reviewedAt: new Date(),
                 reviewedBy: currentUser.uid
             });
 
-            // 4. Award user points (20 points for new product)
             const userRef = doc(db, 'users', submission.userId);
             const userDoc = await getDocs(collection(db, 'users'));
             const userData = userDoc.docs.find(d => d.id === submission.userId)?.data();
@@ -75,8 +81,6 @@ export default function ProductSubmissions() {
             }
 
             toast.success(`Product "${submission.productName}" approved!`);
-
-            // Update local state
             setSubmissions(submissions.map(s =>
                 s.id === submission.id ? { ...s, status: 'approved' } : s
             ));
@@ -117,7 +121,6 @@ export default function ProductSubmissions() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Product Submissions</h1>
@@ -125,12 +128,38 @@ export default function ProductSubmissions() {
                 </div>
             </div>
 
-            {/* Submissions Grid */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search by product, category, or user..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                </div>
+
+                <div className="flex gap-2">
+                    {['all', 'pending', 'approved', 'rejected'].map(status => (
+                        <button
+                            key={status}
+                            onClick={() => setFilterStatus(status)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterStatus === status
+                                    ? 'bg-primary-600 text-white'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                        >
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {submissions.filter(s => s.status === 'pending').map((submission) => (
+                {filteredSubmissions.map((submission) => (
                     <div key={submission.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="p-6">
-                            {/* Product Image */}
                             <div className="h-32 bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
                                 <img
                                     src={submission.imageUrl}
@@ -138,12 +167,11 @@ export default function ProductSubmissions() {
                                     className="max-h-full max-w-full object-contain"
                                     onError={(e) => {
                                         e.target.style.display = 'none';
-                                        e.target.parentElement.innerHTML = '<div class="text-gray-400"><Package class="h-12 w-12" /></div>';
+                                        e.target.parentElement.innerHTML = '<div class="flex items-center justify-center text-gray-400"><svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>';
                                     }}
                                 />
                             </div>
 
-                            {/* Product Info */}
                             <h3 className="text-lg font-bold text-gray-900 mb-2">{submission.productName}</h3>
                             <div className="space-y-2 text-sm text-gray-600 mb-4">
                                 <div className="flex justify-between">
@@ -165,78 +193,50 @@ export default function ProductSubmissions() {
                                         {submission.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}
                                     </span>
                                 </div>
+                                <div className="flex justify-between items-center">
+                                    <span>Status:</span>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${submission.status === 'pending'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : submission.status === 'approved'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-red-100 text-red-800'
+                                        }`}>
+                                        {submission.status}
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => handleApprove(submission)}
-                                    className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                                    title="Approve"
-                                >
-                                    <Check className="h-4 w-4" />
-                                    Approve
-                                </button>
-                                <button
-                                    onClick={() => handleReject(submission.id)}
-                                    className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                                    title="Reject"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Reject
-                                </button>
-                            </div>
+                            {submission.status === 'pending' && (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleApprove(submission)}
+                                        className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Check className="h-4 w-4" />
+                                        Approve
+                                    </button>
+                                    <button
+                                        onClick={() => handleReject(submission.id)}
+                                        className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        Reject
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
 
-                {submissions.filter(s => s.status === 'pending').length === 0 && (
+                {filteredSubmissions.length === 0 && (
                     <div className="col-span-full text-center py-12 bg-white rounded-xl border border-gray-100">
                         <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-500">No pending product submissions</p>
+                        <p className="text-gray-500">
+                            No {filterStatus !== 'all' ? filterStatus : ''} product submissions found
+                        </p>
                     </div>
                 )}
             </div>
-
-            {/* Reviewed Submissions */}
-            {submissions.filter(s => s.status !== 'pending').length > 0 && (
-                <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-gray-900">Reviewed Submissions</h2>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted By</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {submissions.filter(s => s.status !== 'pending').map((submission) => (
-                                    <tr key={submission.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{submission.productName}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">{submission.category}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">{submission.userName}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${submission.status === 'approved'
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {submission.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">
-                                            {submission.reviewedAt?.toDate?.()?.toLocaleDateString() || 'N/A'}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
